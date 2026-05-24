@@ -1,0 +1,20 @@
+# KiranaPOS - AI Agent Master Rules
+
+## 1. The Core Architecture
+* **Framework:** React Native (Expo Custom Dev Client). Do NOT use standard Expo Go. Do NOT write standard React web code (no <div>, <span>, or tailwind web classes).
+* **Database:** WatermelonDB (SQLite) with JSI enabled for zero-latency local reads.
+* **Backend:** Supabase (PostgreSQL) used ONLY for asynchronous background Delta Syncs.
+* **Hardware:** `react-native-ble-plx` for Bluetooth thermal printing, and `react-native-vision-camera` (v5 native CodeScanner) for barcode reading.
+
+## 2. The Golden Rule (Offline-First)
+The checkout and scanning loop MUST never await a network request. All product lookups and cart totals must read/write to the local WatermelonDB instance. If a barcode is not found locally, trigger the "Scan-to-Save" UI. Never block the UI waiting for Supabase.
+
+## 3. Tech Stack Versions (SDK 54)
+* React Native 0.74 / Expo SDK 54. 
+* Do not hallucinate Node versions below 20.19.4.
+* Use `npx expo install` for all native dependencies to ensure version compatibility. 
+
+## 4. UI/UX & Styling
+* No infinite loading spinners. Use skeleton loaders (`moti`) or graceful degradations with retry timeouts.
+* Keep styling contrast high and touch targets massive (for kirana store environments).
+* All user inputs must be sanitized before DB insertion.
