@@ -56,12 +56,6 @@
         }
       ],
       [
-        "@morrowdigital/watermelondb-expo-plugin",
-        {
-          "disableJsi": true
-        }
-      ],
-      [
         "react-native-vision-camera",
         {
           "cameraPermissionText": "Scan barcodes"
