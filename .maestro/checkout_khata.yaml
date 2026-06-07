@@ -1,0 +1,32 @@
+appId: com.haarischharia.kiranapos
+---
+- launchApp
+- runFlow:
+    when:
+      visible: "Unfinished Bill"
+    commands:
+      - tapOn: "Clear"
+- tapOn: "Scan"
+- tapOn: "Loose Items"
+- tapOn:
+    id: "add-loose-btn"
+- tapOn:
+    id: "loose-name-input"
+- inputText: "E2E Sugar"
+- tapOn:
+    id: "loose-price-input"
+- inputText: "50"
+- tapOn:
+    id: "save-loose-btn"
+- extendedWaitUntil:
+    visible: "E2E Sugar (1 kg)"
+    timeout: 5000
+- tapOn: "E2E Sugar (1 kg)"
+- tapOn:
+    id: "add-to-cart-btn"
+- tapOn: "Cart"
+- tapOn:
+    id: "checkout-btn"
+- tapOn:
+    id: "checkout-khata-btn"
+- assertVisible: "Select Customer"

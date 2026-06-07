@@ -1,6 +1,6 @@
-import { PermissionsAndroid, Platform } from 'react-native';
+import { PermissionsAndroid, Platform, Rationale } from 'react-native';
 
-const bluetoothScanRationale: PermissionsAndroid.Rationale = {
+const bluetoothScanRationale: Rationale = {
   title: 'Bluetooth scan permission',
   message:
     'KiranaPOS needs Bluetooth scan permission to discover nearby receipt printers and Bluetooth accessories.',
@@ -8,7 +8,7 @@ const bluetoothScanRationale: PermissionsAndroid.Rationale = {
   buttonNegative: 'Deny',
 };
 
-const bluetoothConnectRationale: PermissionsAndroid.Rationale = {
+const bluetoothConnectRationale: Rationale = {
   title: 'Bluetooth connect permission',
   message:
     'KiranaPOS needs Bluetooth connect permission to pair with and communicate with nearby receipt printers and Bluetooth accessories.',

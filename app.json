@@ -8,6 +8,14 @@
     "scheme": "kiranapos",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "updates": {
+      "url": "https://u.expo.dev/771c626d-9ef6-4135-83aa-d1d0e41c56ee",
+      "checkAutomatically": "ON_LOAD",
+      "enabled": true
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "ios": {
       "supportsTablet": true
     },
@@ -20,7 +28,14 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.haarischharia.kiranapos"
+      "package": "com.haarischharia.kiranapos",
+      "permissions": [
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "output": "static",
@@ -55,19 +70,16 @@
       [
         "react-native-vision-camera",
         {
-          "cameraPermissionText": "Scan barcodes"
+          "cameraPermissionText": "Allow KiranaPOS to access your camera for barcode scanning."
         }
       ],
       [
         "@config-plugins/react-native-ble-plx",
         {
-          "isBackgroundEnabled": false,
-          "modes": [
-            "central"
-          ],
-          "neverForLocation": true
+          "isConnectable": true
         }
-      ]
+      ],
+      ["@sentry/react-native/expo", { "url": "https://sentry.io/", "project": "kiranapos", "organization": "haaris-nx" }]
     ],
     "experiments": {
       "typedRoutes": true,
