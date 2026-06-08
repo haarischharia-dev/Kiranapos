@@ -18,3 +18,6 @@ The checkout and scanning loop MUST never await a network request. All product l
 * No infinite loading spinners. Use skeleton loaders (`moti`) or graceful degradations with retry timeouts.
 * Keep styling contrast high and touch targets massive (for kirana store environments).
 * All user inputs must be sanitized before DB insertion.
+
+## 5. Dependency Hygiene
+* ANTI-HALLUCINATION: Before adding any new dependency to package.json, you MUST verify the package actually exists on npm and is actively maintained. Do not hallucinate package names.
