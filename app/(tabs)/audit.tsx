@@ -4,6 +4,7 @@ import { Camera, useCameraDevice, useCameraPermission, useCodeScanner } from 're
 import { useIsFocused } from '@react-navigation/native';
 import { openDatabase } from '../../src/db/database';
 import { incrementStock } from '../../src/db/productRepo';
+import { isIndianRetailBarcode } from '../../src/utils/barcodeValidation';
 
 export default function AuditScreen() {
   const { hasPermission, requestPermission } = useCameraPermission();
@@ -31,6 +32,7 @@ export default function AuditScreen() {
     onCodeScanned: (codes) => {
       const code = codes[0];
       if (!code?.value) return;
+      if (!isIndianRetailBarcode(code.value)) return;
 
       const now = Date.now();
       if (code.value === lastScannedCode.current && (now - lastScannedTime.current) < 1200) {

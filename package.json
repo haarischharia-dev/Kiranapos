@@ -11,7 +11,8 @@
     "lint": "expo lint",
     "test": "jest",
     "test:e2e": "bash scripts/run-maestro.sh test .maestro/",
-    "test:e2e:cash": "bash scripts/run-maestro.sh test .maestro/checkout_cash.yaml"
+    "test:e2e:cash": "bash scripts/run-maestro.sh test .maestro/checkout_cash.yaml",
+    "db:push": "bash scripts/supabase-db-push.sh"
   },
   "dependencies": {
     "@config-plugins/react-native-ble-plx": "^7.0.0",

@@ -1,16 +1,17 @@
+import React, { useCallback, useRef, useState } from 'react';
+import { StyleSheet, View, Text, Button, Vibration, Platform, Modal, TextInput, TouchableOpacity, KeyboardAvoidingView } from 'react-native';
+import { Camera, useCameraDevice, useCameraPermission, useCodeScanner } from 'react-native-vision-camera';
 import { useIsFocused } from '@react-navigation/native';
 import { useNetworkState } from 'expo-network';
-import React, { useCallback, useRef, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, Vibration, View } from 'react-native';
-import { Camera, useCameraDevice, useCameraPermission, useCodeScanner } from 'react-native-vision-camera';
+import { openDatabase } from '../../src/db/database';
+import { findByBarcode, upsertProduct } from '../../src/db/productRepo';
+import { fetchProductFromInternet } from '../../src/utils/barcodeApi';
+import { isIndianRetailBarcode } from '../../src/utils/barcodeValidation';
+import { useCartStore } from '../../src/store/cartStore';
 import CartView from '../../src/components/CartView';
-import NewProductModal from '../../src/components/NewProductModal';
 import QuickTapGrid from '../../src/components/QuickTapGrid';
 import QuickTapStrip from '../../src/components/QuickTapStrip';
-import { openDatabase } from '../../src/db/database';
-import { findByBarcode } from '../../src/db/productRepo';
-import { useCartStore } from '../../src/store/cartStore';
-import { fetchProductFromInternet } from '../../src/utils/barcodeApi';
+import NewProductModal from '../../src/components/NewProductModal';
 export default function ScannerScreen() {
   const { hasPermission, requestPermission } = useCameraPermission();
   const device = useCameraDevice('back');
@@ -43,6 +44,7 @@ export default function ScannerScreen() {
     onCodeScanned: async (codes) => {
       const code = codes[0];
       if (!code || !code.value || isProcessing.current) return;
+      if (!isIndianRetailBarcode(code.value)) return;
 
       const now = Date.now();
       

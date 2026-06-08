@@ -14,6 +14,7 @@ interface NewProductModalProps {
 export default function NewProductModal({ visible, barcode, initialName, onClose }: NewProductModalProps) {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const addItem = useCartStore((state) => state.addItem);
 
   // Sync incoming initialName when modal becomes visible
@@ -21,17 +22,24 @@ export default function NewProductModal({ visible, barcode, initialName, onClose
     if (visible) {
       setName(initialName);
       setPrice('');
+      setError(null);
     }
   }, [visible, initialName]);
 
   const handleSaveProduct = async () => {
-    const sanitizedName = name.trim().substring(0, 50);
-    const parsedPrice = parseFloat(price);
-    
-    if (!sanitizedName || isNaN(parsedPrice) || parsedPrice <= 0) {
-      alert("Invalid input: Please provide a valid product name and a price greater than 0.");
+    const cleanName = name.trim();
+    if (!cleanName) {
+      setError('Name cannot be empty');
       return;
     }
+
+    const parsedPrice = parseFloat(price);
+    if (isNaN(parsedPrice) || parsedPrice <= 0) {
+      setError('Price must be a valid positive number');
+      return;
+    }
+
+    const sanitizedName = cleanName.substring(0, 50);
 
     try {
       const db = await openDatabase();
@@ -75,7 +83,10 @@ export default function NewProductModal({ visible, barcode, initialName, onClose
             style={styles.input}
             placeholder="Product Name"
             value={name}
-            onChangeText={setName}
+            onChangeText={(text) => {
+              setError(null);
+              setName(text);
+            }}
             autoFocus={!initialName} // Focus name if it's empty
           />
           
@@ -83,10 +94,15 @@ export default function NewProductModal({ visible, barcode, initialName, onClose
             style={styles.input}
             placeholder="Price (₹)"
             value={price}
-            onChangeText={setPrice}
+            onChangeText={(text) => {
+              setError(null);
+              setPrice(text);
+            }}
             keyboardType="numeric"
             autoFocus={!!initialName} // Focus price if name is pre-filled
           />
+
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
           
           <View style={styles.modalActions}>
             <Button title="Cancel" onPress={onClose} color="red" />
@@ -127,6 +143,12 @@ const styles = StyleSheet.create({
   disabledInput: {
     backgroundColor: '#eee',
     color: '#666',
+  },
+  errorText: {
+    color: '#e74c3c',
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 8,
   },
   modalActions: {
     flexDirection: 'row',
