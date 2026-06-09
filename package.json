@@ -12,10 +12,15 @@
     "test": "jest",
     "test:e2e": "bash scripts/run-maestro.sh test .maestro/",
     "test:e2e:cash": "bash scripts/run-maestro.sh test .maestro/checkout_cash.yaml",
-    "db:push": "bash scripts/supabase-db-push.sh"
+    "db:push": "bash scripts/supabase-db-push.sh",
+    "functions:deploy": "bash scripts/supabase-functions-deploy.sh"
   },
   "dependencies": {
     "@config-plugins/react-native-ble-plx": "^7.0.0",
+    "@expo-google-fonts/anybody": "^0.4.2",
+    "@expo-google-fonts/archivo-narrow": "^0.4.2",
+    "@expo-google-fonts/jetbrains-mono": "^0.4.1",
+    "@expo-google-fonts/work-sans": "^0.4.2",
     "@expo/vector-icons": "^15.0.3",
     "@nozbe/watermelondb": "^0.28.0",
     "@react-native-community/netinfo": "11.4.1",

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import KText from '../components/ui/KText';
+import { KiranaBorder, KiranaColors, KiranaRadius, KiranaSpacing } from '@/constants/kirana-design';
 import ReceiptPreview from '../components/ReceiptPreview';
 import { useCartStore } from '../store/cartStore';
 import CustomerPickerModal from '../components/CustomerPickerModal';
@@ -103,7 +105,7 @@ export default function CheckoutScreen() {
       {/* Top Half: Scrollable Receipt Preview */}
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {items.length === 0 ? (
-          <Text style={styles.emptyText}>Cart is empty</Text>
+          <KText variant="bodyMd" style={styles.emptyText}>Cart is empty</KText>
         ) : (
           <ReceiptPreview cartItems={items} total={total} />
         )}
@@ -111,7 +113,7 @@ export default function CheckoutScreen() {
 
       {/* Bottom Half: Fixed Footer with 3-Way Tender */}
       <View style={styles.footer}>
-        <Text style={styles.tenderLabel}>Select Payment Method</Text>
+        <KText variant="labelCaps" style={styles.tenderLabel}>Select Payment Method</KText>
         <View style={styles.buttonRow}>
           <TouchableOpacity 
             testID="checkout-cash-btn"
@@ -119,7 +121,7 @@ export default function CheckoutScreen() {
             onPress={handleCash}
             disabled={items.length === 0}
           >
-            <Text style={styles.tenderBtnText}>💵 Cash</Text>
+            <KText variant="labelCaps" style={styles.tenderBtnText}>Cash</KText>
           </TouchableOpacity>
           <TouchableOpacity 
             testID="checkout-upi-btn"
@@ -127,7 +129,7 @@ export default function CheckoutScreen() {
             onPress={handleUpi}
             disabled={items.length === 0}
           >
-            <Text style={styles.tenderBtnText}>📱 UPI</Text>
+            <KText variant="labelCaps" style={styles.tenderBtnText}>UPI</KText>
           </TouchableOpacity>
           <TouchableOpacity 
             testID="checkout-khata-btn"
@@ -135,7 +137,7 @@ export default function CheckoutScreen() {
             onPress={handleKhata}
             disabled={items.length === 0}
           >
-            <Text style={styles.tenderBtnText}>📖 Khata</Text>
+            <KText variant="labelCaps" style={styles.tenderBtnText}>Khata</KText>
           </TouchableOpacity>
         </View>
       </View>
@@ -161,67 +163,56 @@ export default function CheckoutScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f6fa',
+    backgroundColor: KiranaColors.background,
   },
   scrollContent: {
-    paddingVertical: 24,
-    paddingHorizontal: 16,
+    paddingVertical: KiranaSpacing.marginPage,
+    paddingHorizontal: KiranaSpacing.gutter,
     flexGrow: 1,
   },
   emptyText: {
     textAlign: 'center',
     marginTop: 40,
-    fontSize: 16,
-    color: '#636e72',
+    color: KiranaColors.onSurfaceVariant,
   },
   footer: {
-    backgroundColor: '#fff',
-    padding: 24,
-    borderTopWidth: 1,
-    borderTopColor: '#dcdde1',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 8,
+    backgroundColor: KiranaColors.surface,
+    padding: KiranaSpacing.marginPage,
+    borderTopWidth: KiranaBorder.card,
+    borderTopColor: KiranaColors.outlineVariant,
   },
   tenderLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#636e72',
+    color: KiranaColors.onSurfaceVariant,
     marginBottom: 16,
     textAlign: 'center',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
   },
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: 8,
   },
   tenderBtn: {
     flex: 1,
-    paddingVertical: 18,
-    borderRadius: 12,
+    minHeight: KiranaSpacing.touchMin,
+    borderRadius: KiranaRadius.md,
     alignItems: 'center',
-    marginHorizontal: 6,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    justifyContent: 'center',
+    borderWidth: KiranaBorder.card,
   },
   cashBtn: {
-    backgroundColor: '#00b894',
+    backgroundColor: KiranaColors.success,
+    borderColor: KiranaColors.success,
   },
   upiBtn: {
-    backgroundColor: '#0984e3',
+    backgroundColor: KiranaColors.tertiary,
+    borderColor: KiranaColors.tertiary,
   },
   khataBtn: {
-    backgroundColor: '#d63031',
+    backgroundColor: KiranaColors.primaryContainer,
+    borderColor: KiranaColors.onPrimaryContainer,
   },
   tenderBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: KiranaColors.onPrimary,
+    fontSize: 13,
   },
 });

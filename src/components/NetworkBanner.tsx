@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { View, StyleSheet, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNetworkState } from '../hooks/useNetworkState';
 import {
   NETWORK_BANNER_HEIGHT,
   useNetworkBannerStore,
 } from '../store/networkBannerStore';
+import { KiranaColors } from '@/constants/kirana-design';
+import KText from './ui/KText';
 
 const BANNER_HEIGHT = NETWORK_BANNER_HEIGHT;
 
@@ -19,7 +21,6 @@ export default function NetworkBanner() {
   const [mode, setMode] = useState<BannerMode>('hidden');
   const setBottomInset = useNetworkBannerStore((state) => state.setBottomInset);
 
-  // Track offline → online transitions for the brief "Back online" flash.
   useEffect(() => {
     if (isOffline) {
       wasOfflineRef.current = true;
@@ -50,7 +51,7 @@ export default function NetworkBanner() {
     }).start();
   }, [isVisible, hiddenOffset, slideAnim, setBottomInset]);
 
-  const backgroundColor = mode === 'back_online' ? '#2e7d32' : '#212121';
+  const backgroundColor = mode === 'back_online' ? KiranaColors.success : KiranaColors.navy;
   const label =
     mode === 'back_online'
       ? 'Back online'
@@ -69,9 +70,9 @@ export default function NetworkBanner() {
       ]}
     >
       <View style={styles.banner}>
-        <Text style={styles.text} numberOfLines={1}>
+        <KText variant="bodyMd" style={styles.text} numberOfLines={1}>
           {label}
-        </Text>
+        </KText>
       </View>
     </Animated.View>
   );
@@ -93,8 +94,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   text: {
-    color: '#fff',
-    fontWeight: '500',
+    color: KiranaColors.onPrimary,
     fontSize: 12,
     letterSpacing: 0.2,
   },

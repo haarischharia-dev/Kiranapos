@@ -1,10 +1,13 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { StyleSheet, View, Text, Vibration, Modal, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Vibration, Modal, TouchableOpacity } from 'react-native';
 import { Camera, useCameraDevice, useCameraPermission, useCodeScanner } from 'react-native-vision-camera';
 import { useIsFocused } from '@react-navigation/native';
 import { openDatabase } from '../../src/db/database';
 import { incrementStock } from '../../src/db/productRepo';
 import { isIndianRetailBarcode } from '../../src/utils/barcodeValidation';
+import KText from '../../src/components/ui/KText';
+import KButton from '../../src/components/ui/KButton';
+import { KiranaBorder, KiranaColors, KiranaRadius, KiranaSpacing } from '@/constants/kirana-design';
 
 export default function AuditScreen() {
   const { hasPermission, requestPermission } = useCameraPermission();
@@ -52,10 +55,8 @@ export default function AuditScreen() {
   if (!hasPermission) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.permissionText}>Camera permission is required for Audits.</Text>
-        <TouchableOpacity style={styles.actionBtn} onPress={requestPermission}>
-          <Text style={styles.actionBtnText}>Request Permission</Text>
-        </TouchableOpacity>
+        <KText variant="bodyLg" style={styles.permissionText}>Camera permission is required for inventory intake.</KText>
+        <KButton label="Request Permission" onPress={requestPermission} />
       </View>
     );
   }
@@ -63,7 +64,7 @@ export default function AuditScreen() {
   if (device == null) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.permissionText}>No back camera device found.</Text>
+        <KText variant="bodyLg" style={styles.permissionText}>No back camera device found.</KText>
       </View>
     );
   }
@@ -103,13 +104,12 @@ export default function AuditScreen() {
       onPress={() => handleKeypadPress(label)}
       activeOpacity={0.7}
     >
-      <Text style={styles.keyText}>{label}</Text>
+      <KText variant="priceSub" style={styles.keyText}>{label}</KText>
     </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      {/* Full Screen Camera for Audit */}
       <View style={styles.cameraContainer}>
         <Camera
           key={cameraKey}
@@ -123,7 +123,7 @@ export default function AuditScreen() {
         {/* Target Overlay Box */}
         <View style={styles.overlay}>
           <View style={styles.targetBox} />
-          <Text style={styles.overlayText}>Aim at a barcode</Text>
+          <KText variant="labelCaps" style={styles.overlayText}>Scan to add stock</KText>
         </View>
       </View>
 
@@ -133,15 +133,15 @@ export default function AuditScreen() {
           <View style={styles.modalContent}>
             
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Intake Audit</Text>
-              <Text style={styles.barcodeText}>{scannedBarcode}</Text>
+              <KText variant="headlineMd" style={styles.modalTitle}>Intake Audit</KText>
+              <KText variant="bodyMd" style={styles.barcodeText}>{scannedBarcode}</KText>
             </View>
             
             {/* Display Screen */}
             <View style={styles.displayScreen}>
-              <Text style={styles.displayText}>
-                {intakeQty === '' ? '1 (Default)' : intakeQty}
-              </Text>
+              <KText variant="priceDisplay" style={styles.displayText}>
+                {intakeQty === '' ? '1' : intakeQty}
+              </KText>
             </View>
             
             {/* Custom Massive Keypad */}
@@ -168,13 +168,8 @@ export default function AuditScreen() {
               </View>
             </View>
 
-            <TouchableOpacity style={styles.confirmBtn} onPress={handleConfirm}>
-              <Text style={styles.confirmBtnText}>CONFIRM INTAKE</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)}>
-              <Text style={styles.cancelBtnText}>Cancel</Text>
-            </TouchableOpacity>
+            <KButton label="Confirm Intake" onPress={handleConfirm} height={64} />
+            <KButton label="Cancel" variant="secondary" onPress={() => setModalVisible(false)} style={styles.cancelBtn} />
 
           </View>
         </View>
@@ -186,31 +181,24 @@ export default function AuditScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: KiranaColors.background,
   },
   cameraContainer: {
     flex: 1,
     overflow: 'hidden',
+    backgroundColor: '#000',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#000',
+    backgroundColor: KiranaColors.background,
+    padding: KiranaSpacing.marginPage,
+    gap: 16,
   },
   permissionText: {
-    color: '#fff',
-    fontSize: 16,
-    marginBottom: 20,
-  },
-  actionBtn: {
-    backgroundColor: '#00b894',
-    padding: 14,
-    borderRadius: 8,
-  },
-  actionBtnText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: KiranaColors.onSurface,
+    textAlign: 'center',
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -220,32 +208,30 @@ const styles = StyleSheet.create({
   targetBox: {
     width: 250,
     height: 150,
-    borderWidth: 2,
-    borderColor: '#00b894',
+    borderWidth: KiranaBorder.focus,
+    borderColor: KiranaColors.scannerFrame,
     backgroundColor: 'transparent',
-    borderRadius: 12,
+    borderRadius: KiranaRadius.lg,
   },
   overlayText: {
     marginTop: 20,
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    color: KiranaColors.surface,
+    backgroundColor: 'rgba(35,26,19,0.75)',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
   },
-  
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: KiranaColors.modalBackdrop,
   },
   modalContent: {
-    backgroundColor: '#1e272e',
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    padding: 24,
+    backgroundColor: KiranaColors.surface,
+    borderTopLeftRadius: KiranaRadius.xl,
+    borderTopRightRadius: KiranaRadius.xl,
+    borderWidth: KiranaBorder.focus,
+    borderColor: KiranaColors.navy,
+    padding: KiranaSpacing.marginPage,
     paddingBottom: 40,
   },
   modalHeader: {
@@ -253,29 +239,25 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#fff',
+    color: KiranaColors.onSurface,
   },
   barcodeText: {
-    fontSize: 14,
-    color: '#00b894',
+    color: KiranaColors.primary,
     marginTop: 4,
-    fontFamily: 'monospace',
+    fontFamily: 'JetBrainsMono_500Medium',
   },
   displayScreen: {
-    backgroundColor: '#000',
-    borderRadius: 12,
+    backgroundColor: KiranaColors.navy,
+    borderRadius: KiranaRadius.md,
     padding: 20,
     marginBottom: 20,
     alignItems: 'flex-end',
-    borderWidth: 1,
-    borderColor: '#333',
+    borderWidth: KiranaBorder.card,
+    borderColor: KiranaColors.outline,
   },
   displayText: {
+    color: KiranaColors.primaryContainer,
     fontSize: 40,
-    fontWeight: 'bold',
-    color: '#00b894',
   },
   keypad: {
     marginBottom: 20,
@@ -284,39 +266,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 10,
+    gap: 8,
   },
   keyBtn: {
-    backgroundColor: '#2d3436',
-    borderRadius: 12,
-    padding: 20,
-    marginHorizontal: 5,
+    backgroundColor: KiranaColors.surfaceDim,
+    borderRadius: KiranaRadius.md,
+    minHeight: 72,
+    minWidth: 72,
+    marginHorizontal: 2,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: KiranaBorder.card,
+    borderColor: KiranaColors.outlineVariant,
   },
   keyText: {
+    color: KiranaColors.onSurface,
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  confirmBtn: {
-    backgroundColor: '#00b894',
-    padding: 20,
-    borderRadius: 16,
-    alignItems: 'center',
-  },
-  confirmBtnText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: '900',
   },
   cancelBtn: {
-    padding: 16,
-    alignItems: 'center',
     marginTop: 8,
   },
-  cancelBtnText: {
-    color: '#888',
-    fontSize: 16,
-    fontWeight: '600',
-  }
 });

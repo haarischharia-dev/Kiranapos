@@ -1,9 +1,14 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, router } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import * as SystemUI from 'expo-system-ui';
 import { useEffect } from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { KiranaColors } from '@/constants/kirana-design';
+import { useKiranaFonts } from '../src/hooks/useKiranaFonts';
 
 import { openDatabase } from '../src/db/database';
 import { injectMasterDatabase } from '../src/db/seeder';
@@ -29,8 +34,23 @@ export const unstable_settings = {
   anchor: '(tabs)',
 };
 
+SplashScreen.preventAutoHideAsync().catch(() => undefined);
+
+const navTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: KiranaColors.primaryContainer,
+    background: KiranaColors.background,
+    card: KiranaColors.surface,
+    text: KiranaColors.onSurface,
+    border: KiranaColors.outlineVariant,
+  },
+};
+
 function RootLayout() {
   const colorScheme = useColorScheme();
+  const { loaded: fontsLoaded } = useKiranaFonts();
   
   // Wire the Background Trigger independently
   useSync();
@@ -39,6 +59,10 @@ function RootLayout() {
 
   useEffect(() => {
     track('App_Started');
+  }, []);
+
+  useEffect(() => {
+    SystemUI.setBackgroundColorAsync(KiranaColors.background);
   }, []);
 
   useEffect(() => {
@@ -62,18 +86,34 @@ function RootLayout() {
     }, 100);
   }, []);
 
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync().catch(() => undefined);
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: KiranaColors.background }}>
+        <ActivityIndicator size="large" color={KiranaColors.primaryContainer} />
+      </View>
+    );
+  }
+
   return (
     <GlobalErrorBoundary>
       <SafeAreaProvider>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : navTheme}>
           <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
             <Stack.Screen name="day-close" options={{ title: 'Day Close (EOD)' }} />
             <Stack.Screen name="checkout" options={{ presentation: 'modal', title: 'Settle Bill' }} />
+            <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+            <Stack.Screen name="login" options={{ headerShown: false, gestureEnabled: false }} />
           </Stack>
-          <StatusBar style="auto" />
+          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
         </ThemeProvider>
         <NetworkBanner />
       </SafeAreaProvider>

@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, StyleSheet, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { openDatabase } from '../db/database';
 import { upsertProduct } from '../db/productRepo';
 import { useCartStore } from '../store/cartStore';
+import KInput from './ui/KInput';
+import KButton from './ui/KButton';
+import KText from './ui/KText';
+import { KiranaBorder, KiranaColors, KiranaRadius, KiranaSpacing } from '@/constants/kirana-design';
 
 interface NewProductModalProps {
   visible: boolean;
@@ -15,14 +19,15 @@ export default function NewProductModal({ visible, barcode, initialName, onClose
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const addItem = useCartStore((state) => state.addItem);
 
-  // Sync incoming initialName when modal becomes visible
   useEffect(() => {
     if (visible) {
       setName(initialName);
       setPrice('');
       setError(null);
+      setIsSaving(false);
     }
   }, [visible, initialName]);
 
@@ -40,11 +45,12 @@ export default function NewProductModal({ visible, barcode, initialName, onClose
     }
 
     const sanitizedName = cleanName.substring(0, 50);
+    setIsSaving(true);
 
     try {
       const db = await openDatabase();
       const id = Math.random().toString(36).substring(2, 15);
-      
+
       const newProduct = {
         id,
         barcode,
@@ -53,60 +59,70 @@ export default function NewProductModal({ visible, barcode, initialName, onClose
         is_loose: 0,
         stock: 0,
         updated_at: new Date().toISOString(),
-        synced_to_global: 0
+        synced_to_global: 0,
       };
 
       await upsertProduct(db, newProduct);
       addItem(newProduct);
-      console.log('Saved & Added to cart:', newProduct.name);
       onClose();
-    } catch (error) {
-      console.error('Failed to save product:', error);
+    } catch (saveError) {
+      console.error('Failed to save product:', saveError);
+      setError('Could not save product. Try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent={true}>
+    <Modal visible={visible} animationType="fade" transparent>
       <KeyboardAvoidingView
         style={styles.modalOverlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>New Product Found</Text>
-          
-          <TextInput
-            style={[styles.input, styles.disabledInput]}
-            value={barcode}
-            editable={false}
-          />
-          
-          <TextInput
-            style={styles.input}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <View style={styles.statusBanner}>
+          <KText variant="labelCaps" style={styles.statusText}>Adding to Inventory</KText>
+        </View>
+
+        <View style={styles.modalCard}>
+          <KText variant="headlineMd" style={styles.modalTitle}>New Product Found</KText>
+          <KText variant="bodyMd" style={styles.modalSub}>
+            Save this barcode to your local catalogue and add it to the bill.
+          </KText>
+
+          <KInput label="Barcode" value={barcode} editable={false} style={styles.disabledInput} />
+          <KInput
+            label="Product Name"
             placeholder="Product Name"
             value={name}
             onChangeText={(text) => {
               setError(null);
               setName(text);
             }}
-            autoFocus={!initialName} // Focus name if it's empty
+            autoFocus={!initialName}
+            error={error && !name.trim() ? error : null}
           />
-          
-          <TextInput
-            style={styles.input}
-            placeholder="Price (₹)"
+          <KInput
+            label="Price (₹)"
+            placeholder="0.00"
             value={price}
             onChangeText={(text) => {
               setError(null);
               setPrice(text);
             }}
             keyboardType="numeric"
-            autoFocus={!!initialName} // Focus price if name is pre-filled
+            autoFocus={!!initialName}
+            error={error && name.trim() ? error : null}
           />
 
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          
           <View style={styles.modalActions}>
-            <Button title="Cancel" onPress={onClose} color="red" />
-            <Button testID="save-product-btn" title="Save" onPress={handleSaveProduct} />
+            <KButton label="Cancel" variant="secondary" onPress={onClose} style={styles.actionBtn} />
+            <KButton
+              testID="save-product-btn"
+              label="Save & Add"
+              onPress={handleSaveProduct}
+              loading={isSaving}
+              style={styles.actionBtn}
+            />
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -117,42 +133,48 @@ export default function NewProductModal({ visible, barcode, initialName, onClose
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    padding: KiranaSpacing.marginPage,
+    backgroundColor: KiranaColors.modalBackdrop,
   },
-  modalContent: {
-    backgroundColor: '#fff',
-    padding: 24,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+  statusBanner: {
+    alignSelf: 'center',
+    backgroundColor: KiranaColors.primaryContainer,
+    borderWidth: KiranaBorder.card,
+    borderColor: KiranaColors.onPrimaryContainer,
+    borderRadius: KiranaRadius.md,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    marginBottom: 16,
+  },
+  statusText: {
+    color: KiranaColors.navy,
+    fontSize: 13,
+  },
+  modalCard: {
+    backgroundColor: KiranaColors.surface,
+    borderWidth: KiranaBorder.focus,
+    borderColor: KiranaColors.navy,
+    borderRadius: KiranaRadius.lg,
+    padding: KiranaSpacing.marginPage,
   },
   modalTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#000',
+    marginBottom: 6,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 16,
-    fontSize: 18,
+  modalSub: {
+    color: KiranaColors.onSurfaceVariant,
     marginBottom: 16,
   },
   disabledInput: {
-    backgroundColor: '#eee',
-    color: '#666',
-  },
-  errorText: {
-    color: '#e74c3c',
-    fontSize: 15,
-    fontWeight: '600',
-    marginBottom: 8,
+    backgroundColor: KiranaColors.surfaceDim,
+    color: KiranaColors.onSurfaceVariant,
   },
   modalActions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
+    gap: 10,
+    marginTop: 4,
+  },
+  actionBtn: {
+    flex: 1,
   },
 });

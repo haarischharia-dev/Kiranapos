@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
+import { KiranaColors } from '@/constants/kirana-design';
 import Animated, {
   Easing,
   interpolate,
@@ -47,6 +48,6 @@ export default function Skeleton({ width, height, radius = 8 }: SkeletonProps) {
 
 const styles = StyleSheet.create({
   base: {
-    backgroundColor: '#3a3225',
+    backgroundColor: KiranaColors.outlineVariant,
   },
 });

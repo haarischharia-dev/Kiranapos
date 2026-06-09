@@ -17,6 +17,21 @@ export async function searchByName(db: SQLiteDatabase, query: string): Promise<P
   return db.getAllAsync('SELECT * FROM products WHERE name LIKE ?', [`%${query}%`]);
 }
 
+/** Offline search by product name or barcode (partial match). */
+export async function searchProducts(db: SQLiteDatabase, query: string): Promise<Product[]> {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+  const like = `%${trimmed}%`;
+  return db.getAllAsync(
+    `SELECT * FROM products
+     WHERE LOWER(name) LIKE LOWER(?)
+        OR barcode LIKE ?
+     ORDER BY name ASC
+     LIMIT 25`,
+    [like, like],
+  );
+}
+
 export async function topLooseItems(db: SQLiteDatabase): Promise<Product[]> {
   return db.getAllAsync(`
     SELECT p.* 

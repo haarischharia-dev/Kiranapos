@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   Modal,
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
+import { KiranaBorder, KiranaColors, KiranaRadius, KiranaSpacing } from '@/constants/kirana-design';
+import KText from './ui/KText';
 import { Customer } from '../types/db';
 import { openDatabase } from '../db/database';
 import { addKhataEntry } from '../db/khataRepo';
@@ -61,17 +62,17 @@ export default function CollectPaymentModal({
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
-          <Text style={styles.headerTitle}>Collect Payment</Text>
+          <KText variant="headlineMd" style={styles.headerTitle}>Collect Payment</KText>
 
           {customer && (
             <>
-              <Text style={styles.customerName}>{customer.name}</Text>
-              <Text style={styles.outstandingLabel}>Outstanding Due</Text>
-              <Text style={styles.outstandingValue}>₹{outstanding.toFixed(2)}</Text>
+              <KText variant="headlineMd" style={styles.customerName}>{customer.name}</KText>
+              <KText variant="labelCaps" style={styles.outstandingLabel}>Outstanding Due</KText>
+              <KText variant="priceDisplay" style={styles.outstandingValue}>₹{outstanding.toFixed(2)}</KText>
 
-              <Text style={styles.inputLabel}>Amount Received</Text>
+              <KText variant="bodyMd" style={styles.inputLabel}>Amount Received</KText>
               <View style={styles.inputRow}>
-                <Text style={styles.currencySymbol}>₹</Text>
+                <KText variant="priceSub" style={styles.currencySymbol}>₹</KText>
                 <TextInput
                   style={styles.input}
                   value={amountText}
@@ -90,7 +91,7 @@ export default function CollectPaymentModal({
                 onPress={() => setAmountText(String(outstanding.toFixed(2)))}
                 disabled={isSaving}
               >
-                <Text style={styles.fullBtnText}>Full Amount (₹{outstanding.toFixed(2)})</Text>
+                <KText variant="bodyMd" style={styles.fullBtnText}>Full Amount (₹{outstanding.toFixed(2)})</KText>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -102,14 +103,14 @@ export default function CollectPaymentModal({
                 {isSaving ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.confirmBtnText}>Record Payment</Text>
+                  <KText variant="labelCaps" style={styles.confirmBtnText}>Record Payment</KText>
                 )}
               </TouchableOpacity>
             </>
           )}
 
           <TouchableOpacity style={styles.cancelBtn} onPress={onClose} disabled={isSaving}>
-            <Text style={styles.cancelBtnText}>Cancel</Text>
+            <KText variant="bodyMd" style={styles.cancelBtnText}>Cancel</KText>
           </TouchableOpacity>
         </View>
       </View>
@@ -120,106 +121,94 @@ export default function CollectPaymentModal({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: KiranaColors.modalBackdrop,
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: KiranaColors.surface,
     width: '90%',
-    borderRadius: 24,
-    padding: 24,
+    borderRadius: KiranaRadius.xl,
+    borderWidth: KiranaBorder.focus,
+    borderColor: KiranaColors.navy,
+    padding: KiranaSpacing.marginPage,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 10,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
+    color: KiranaColors.onSurface,
     marginBottom: 16,
   },
   customerName: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#2d3436',
+    color: KiranaColors.onSurface,
     marginBottom: 12,
+    textAlign: 'center',
   },
   outstandingLabel: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#ff7675',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
+    color: KiranaColors.owed,
+    fontSize: 10,
   },
   outstandingValue: {
+    color: KiranaColors.owed,
     fontSize: 32,
-    fontWeight: '900',
-    color: '#d63031',
     marginTop: 2,
     marginBottom: 24,
   },
   inputLabel: {
     alignSelf: 'flex-start',
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#636e72',
+    color: KiranaColors.onSurfaceVariant,
     marginBottom: 8,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#dcdde1',
-    borderRadius: 12,
+    borderWidth: KiranaBorder.card,
+    borderColor: KiranaColors.outlineVariant,
+    borderRadius: KiranaRadius.md,
     paddingHorizontal: 16,
     width: '100%',
     marginBottom: 16,
+    backgroundColor: KiranaColors.surfaceDim,
   },
   currencySymbol: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#2d3436',
+    color: KiranaColors.onSurface,
     marginRight: 8,
   },
   input: {
     flex: 1,
     fontSize: 28,
-    fontWeight: '900',
-    color: '#2d3436',
+    fontFamily: 'JetBrainsMono_700Bold',
+    color: KiranaColors.onSurface,
     paddingVertical: 14,
   },
   fullBtn: {
-    backgroundColor: '#f1f2f6',
+    backgroundColor: KiranaColors.surfaceDim,
+    borderWidth: KiranaBorder.card,
+    borderColor: KiranaColors.outlineVariant,
     width: '100%',
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: KiranaRadius.md,
     alignItems: 'center',
     marginBottom: 20,
   },
   fullBtnText: {
-    color: '#2d3436',
-    fontSize: 15,
-    fontWeight: 'bold',
+    color: KiranaColors.onSurface,
+    fontFamily: 'WorkSans_600SemiBold',
   },
   confirmBtn: {
-    backgroundColor: '#00b894',
+    backgroundColor: KiranaColors.settled,
     width: '100%',
     paddingVertical: 18,
-    borderRadius: 12,
+    borderRadius: KiranaRadius.md,
     alignItems: 'center',
     marginBottom: 12,
+    borderWidth: KiranaBorder.card,
+    borderColor: KiranaColors.navy,
   },
   confirmBtnDisabled: {
-    backgroundColor: '#b2bec3',
+    backgroundColor: KiranaColors.outlineVariant,
   },
   confirmBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: KiranaColors.onPrimary,
   },
   cancelBtn: {
     width: '100%',
@@ -227,8 +216,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelBtnText: {
-    color: '#666',
-    fontSize: 16,
-    fontWeight: '600',
+    color: KiranaColors.onSurfaceVariant,
+    fontFamily: 'WorkSans_600SemiBold',
   },
 });

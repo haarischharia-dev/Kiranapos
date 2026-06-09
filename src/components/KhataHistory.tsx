@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { KiranaBorder, KiranaColors, KiranaRadius, KiranaSpacing } from '@/constants/kirana-design';
+import KText from './ui/KText';
 import { openDatabase } from '../db/database';
 import { getKhataHistory } from '../db/khataRepo';
 import { KhataEntry } from '../types/db';
@@ -11,6 +14,7 @@ interface KhataHistoryProps {
 }
 
 export default function KhataHistory({ customerId, onBack }: KhataHistoryProps) {
+  const insets = useSafeAreaInsets();
   const [history, setHistory] = useState<KhataEntry[]>([]);
   const [selectedBillId, setSelectedBillId] = useState<string | null>(null);
 
@@ -49,21 +53,21 @@ export default function KhataHistory({ customerId, onBack }: KhataHistoryProps) 
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerBox}>
+      <View style={[styles.headerBox, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity style={styles.backBtn} onPress={onBack}>
-          <Text style={styles.backBtnText}>← Back</Text>
+          <KText variant="bodyMd" style={styles.backBtnText}>← Back</KText>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Transaction History</Text>
+        <KText variant="headlineMd" style={styles.headerTitle}>Transaction History</KText>
         <View style={styles.spacer} />
       </View>
 
       {!customerId ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No customer selected.</Text>
+          <KText variant="bodyMd" style={styles.emptyText}>No customer selected.</KText>
         </View>
       ) : history.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No transaction history.</Text>
+          <KText variant="bodyMd" style={styles.emptyText}>No transaction history.</KText>
         </View>
       ) : (
         <FlatList
@@ -79,16 +83,18 @@ export default function KhataHistory({ customerId, onBack }: KhataHistoryProps) 
                 onPress={() => handleRowPress(item)}
               >
                 <View style={styles.cardInfo}>
-                  <Text style={[styles.typeLabel, isDebit ? styles.labelDebit : styles.labelCredit]}>
+                  <KText variant="bodyMd" style={[styles.typeLabel, isDebit ? styles.labelDebit : styles.labelCredit]}>
                     {isDebit ? 'Sale Bill' : 'Payment Received'}
-                  </Text>
-                  <Text style={styles.dateText}>{formatDate(item.created_at)}</Text>
-                  {isDebit && <Text style={styles.tapToView}>Tap to view items</Text>}
+                  </KText>
+                  <KText variant="bodyMd" style={styles.dateText}>{formatDate(item.created_at)}</KText>
+                  {isDebit ? (
+                    <KText variant="labelCaps" style={styles.tapToView}>Tap to view items</KText>
+                  ) : null}
                 </View>
                 <View style={styles.cardAmount}>
-                  <Text style={[styles.amountValue, isDebit ? styles.amountDebit : styles.amountCredit]}>
+                  <KText variant="priceSub" style={[styles.amountValue, isDebit ? styles.amountDebit : styles.amountCredit]}>
                     {isDebit ? '+' : '-'}₹{item.amount.toFixed(2)}
-                  </Text>
+                  </KText>
                 </View>
               </TouchableOpacity>
             );
@@ -108,32 +114,28 @@ export default function KhataHistory({ customerId, onBack }: KhataHistoryProps) 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f6fa',
+    backgroundColor: KiranaColors.background,
   },
   headerBox: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    paddingTop: 60,
-    paddingBottom: 24,
-    paddingHorizontal: 20,
+    backgroundColor: KiranaColors.surface,
+    paddingBottom: 16,
+    paddingHorizontal: KiranaSpacing.gutter,
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: '#dcdde1',
+    borderBottomWidth: KiranaBorder.hairline,
+    borderBottomColor: KiranaColors.outlineVariant,
   },
   backBtn: {
     padding: 8,
     width: 80,
   },
   backBtnText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#0984e3',
+    color: KiranaColors.primary,
+    fontFamily: 'WorkSans_600SemiBold',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2d3436',
+    color: KiranaColors.onSurface,
   },
   spacer: {
     width: 80,
@@ -144,62 +146,53 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#b2bec3',
+    color: KiranaColors.outline,
   },
   listContainer: {
-    padding: 16,
+    padding: KiranaSpacing.gutter,
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: KiranaColors.surface,
+    borderRadius: KiranaRadius.md,
+    borderWidth: KiranaBorder.card,
+    borderColor: KiranaColors.outlineVariant,
+    padding: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    marginBottom: 10,
   },
   cardInfo: {
     flex: 1,
   },
   typeLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: 'WorkSans_600SemiBold',
     marginBottom: 4,
   },
   labelDebit: {
-    color: '#d63031',
+    color: KiranaColors.owed,
   },
   labelCredit: {
-    color: '#00b894',
+    color: KiranaColors.settled,
   },
   dateText: {
-    fontSize: 14,
-    color: '#636e72',
+    color: KiranaColors.onSurfaceVariant,
   },
   tapToView: {
-    fontSize: 12,
-    color: '#0984e3',
+    color: KiranaColors.primary,
     marginTop: 6,
-    fontWeight: '600',
+    fontSize: 10,
   },
   cardAmount: {
     alignItems: 'flex-end',
   },
   amountValue: {
-    fontSize: 22,
-    fontWeight: '900',
+    fontSize: 20,
   },
   amountDebit: {
-    color: '#d63031',
+    color: KiranaColors.owed,
   },
   amountCredit: {
-    color: '#00b894',
+    color: KiranaColors.settled,
   },
 });

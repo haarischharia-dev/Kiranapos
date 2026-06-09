@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { openDatabase } from '../db/database';
 import { topLooseItems } from '../db/productRepo';
 import { Product } from '../types/db';
 import { useLooseQuickTap } from '../hooks/useLooseQuickTap';
 import LooseCalculatorModal from './LooseCalculatorModal';
+import KText from './ui/KText';
+import { KiranaBorder, KiranaColors, KiranaRadius } from '@/constants/kirana-design';
 
 function shortLooseLabel(name: string): string {
   const stripped = name.replace(/\s*\([\d.]+\s+\w+\)$/i, '').trim();
@@ -13,7 +15,6 @@ function shortLooseLabel(name: string): string {
 }
 
 interface QuickTapStripProps {
-  /** Bumped when cart/grid tab changes so the strip picks up new loose items. */
   refreshKey?: string;
 }
 
@@ -34,7 +35,7 @@ export default function QuickTapStrip({ refreshKey }: QuickTapStripProps) {
   useFocusEffect(
     useCallback(() => {
       fetchItems();
-    }, [fetchItems])
+    }, [fetchItems]),
   );
 
   useEffect(() => {
@@ -60,10 +61,12 @@ export default function QuickTapStrip({ refreshKey }: QuickTapStripProps) {
               onPress={() => quickTap.openProduct(product)}
               activeOpacity={0.75}
             >
-              <Text style={styles.chipName} numberOfLines={1}>
+              <KText variant="labelCaps" style={styles.chipName} numberOfLines={1}>
                 {shortLooseLabel(product.name)}
-              </Text>
-              <Text style={styles.chipPrice}>₹{product.price.toFixed(0)}</Text>
+              </KText>
+              <KText variant="priceLine" style={styles.chipPrice}>
+                ₹{product.price.toFixed(0)}
+              </KText>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -89,44 +92,41 @@ export default function QuickTapStrip({ refreshKey }: QuickTapStripProps) {
 
 const styles = StyleSheet.create({
   stripContainer: {
-    backgroundColor: '#111',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.12)',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
+    backgroundColor: KiranaColors.navy,
+    borderBottomWidth: KiranaBorder.hairline,
+    borderBottomColor: KiranaColors.outlineVariant,
   },
   stripContent: {
     paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingVertical: 6,
     gap: 8,
     flexDirection: 'row',
     alignItems: 'center',
   },
   chip: {
-    minWidth: 72,
-    maxWidth: 96,
+    minWidth: 76,
+    maxWidth: 100,
     paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: '#1f2933',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+    paddingVertical: 6,
+    borderRadius: KiranaRadius.md,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: KiranaBorder.hairline,
+    borderColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
   },
   chipTop: {
-    borderColor: '#00b894',
-    backgroundColor: '#163d34',
+    borderColor: KiranaColors.primaryContainer,
+    backgroundColor: 'rgba(255,153,51,0.18)',
   },
   chipName: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#f5f5f5',
-    marginBottom: 2,
+    color: KiranaColors.surface,
+    marginBottom: 1,
     textAlign: 'center',
   },
   chipPrice: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#00b894',
+    fontSize: 14,
+    lineHeight: 16,
+    color: KiranaColors.primaryContainer,
   },
 });

@@ -1,192 +1,144 @@
 import React from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import { useCartStore } from '../store/cartStore';
-import { router } from 'expo-router';
+import { KiranaBorder, KiranaColors, KiranaSpacing } from '@/constants/kirana-design';
+import KText from './ui/KText';
 
 export default function CartView() {
   const items = useCartStore((state) => state.items);
   const incrementQuantity = useCartStore((state) => state.incrementQuantity);
   const decrementQuantity = useCartStore((state) => state.decrementQuantity);
-  const getTotal = useCartStore((state) => state.getTotal);
 
-  const total = getTotal();
-
-  const handleCheckoutPress = () => {
-    if (items.length === 0) return;
-    router.push('/checkout');
-  };
+  if (items.length === 0) {
+    return (
+      <View style={styles.emptyContainer}>
+        <KText variant="bodyMd" style={styles.emptyText}>
+          Scan items to add them to cart
+        </KText>
+      </View>
+    );
+  }
 
   return (
-    <View style={styles.container}>
-      {items.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Scan items to add them to cart</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={items}
-          keyExtractor={(item) => item.product.id}
-          contentContainerStyle={styles.listContent}
-          renderItem={({ item }) => (
-            <View style={styles.cartItemRow}>
-              <View style={styles.itemInfo}>
-                <Text style={styles.itemName} numberOfLines={1}>
-                  {item.product.name}
-                </Text>
-                <Text style={styles.itemPrice}>₹{item.product.price.toFixed(2)}</Text>
-              </View>
-
-              <View style={styles.stepperContainer}>
-                <TouchableOpacity
-                  style={styles.stepperBtn}
-                  onPress={() => decrementQuantity(item.product.id)}
-                >
-                  <Text style={styles.stepperBtnText}>-</Text>
-                </TouchableOpacity>
-
-                <Text style={styles.quantityText}>{item.quantity}</Text>
-
-                <TouchableOpacity
-                  style={styles.stepperBtn}
-                  onPress={() => incrementQuantity(item.product.id)}
-                >
-                  <Text style={styles.stepperBtnText}>+</Text>
-                </TouchableOpacity>
-              </View>
+    <FlatList
+      data={items}
+      keyExtractor={(item) => item.product.id}
+      contentContainerStyle={styles.listContent}
+      renderItem={({ item, index }) => {
+        const lineTotal = item.product.price * item.quantity;
+        return (
+          <View style={[styles.cartItemRow, index % 2 === 1 && styles.cartItemAlt]}>
+            <View style={styles.itemInfo}>
+              <KText variant="headlineMd" style={styles.itemName} numberOfLines={1}>
+                {item.product.name}
+              </KText>
+              <KText variant="bodyMd" style={styles.itemPrice}>
+                ₹{item.product.price.toFixed(2)} / unit
+              </KText>
             </View>
-          )}
-        />
-      )}
 
-      <View style={styles.footer}>
-        <View style={styles.footerRow}>
-          <View style={styles.totalBlock}>
-            <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>₹{total.toFixed(2)}</Text>
+            <View style={styles.stepperContainer}>
+              <TouchableOpacity
+                style={styles.stepperBtn}
+                onPress={() => decrementQuantity(item.product.id)}
+              >
+                <KText variant="priceSub" style={styles.stepperBtnText}>−</KText>
+              </TouchableOpacity>
+              <KText variant="priceSub" style={styles.quantityText}>
+                {String(item.quantity).padStart(2, '0')}
+              </KText>
+              <TouchableOpacity
+                style={styles.stepperBtn}
+                onPress={() => incrementQuantity(item.product.id)}
+              >
+                <KText variant="priceSub" style={styles.stepperBtnText}>+</KText>
+              </TouchableOpacity>
+            </View>
+
+            <KText variant="priceLine" style={styles.lineTotal}>
+              ₹{lineTotal.toFixed(0)}
+            </KText>
           </View>
-          <TouchableOpacity
-            testID="checkout-btn"
-            style={[styles.checkoutBtn, items.length === 0 && styles.btnDisabled]}
-            onPress={handleCheckoutPress}
-            disabled={items.length === 0}
-          >
-            <Text style={styles.checkoutBtnText}>CHECKOUT</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
+        );
+      }}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
   listContent: {
-    paddingBottom: 4,
+    paddingBottom: 2,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: KiranaSpacing.gutter,
+    backgroundColor: KiranaColors.background,
   },
   emptyText: {
-    color: '#888',
-    fontSize: 14,
+    color: KiranaColors.onSurfaceVariant,
+    textAlign: 'center',
   },
   cartItemRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    paddingVertical: 9,
+    backgroundColor: KiranaColors.surface,
+    paddingVertical: 6,
     paddingHorizontal: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e0e0e0',
+    borderBottomWidth: KiranaBorder.hairline,
+    borderBottomColor: KiranaColors.outlineVariant,
+    gap: 6,
+  },
+  cartItemAlt: {
+    backgroundColor: KiranaColors.surfaceDim,
   },
   itemInfo: {
     flex: 1,
-    paddingRight: 8,
+    minWidth: 0,
   },
   itemName: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#333',
+    fontSize: 18,
+    lineHeight: 20,
+    color: KiranaColors.onSurface,
   },
   itemPrice: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2,
+    color: KiranaColors.secondary,
+    marginTop: 1,
+    fontSize: 14,
+    lineHeight: 16,
   },
   stepperContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
+    borderWidth: KiranaBorder.card,
+    borderColor: KiranaColors.onSurface,
+    borderRadius: 6,
+    backgroundColor: KiranaColors.surface,
   },
   stepperBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  stepperBtnText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  quantityText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    minWidth: 24,
-    textAlign: 'center',
-  },
-  footer: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 10,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#e0e0e0',
-  },
-  footerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  totalBlock: {
-    flex: 1,
-  },
-  totalLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#777',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
-  totalValue: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#00b894',
-    marginTop: 1,
-  },
-  checkoutBtn: {
-    backgroundColor: '#00b894',
-    paddingVertical: 11,
-    paddingHorizontal: 18,
-    borderRadius: 10,
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 118,
   },
-  btnDisabled: {
-    backgroundColor: '#ccc',
+  stepperBtnText: {
+    color: KiranaColors.onSurface,
+    fontSize: 20,
+    lineHeight: 22,
   },
-  checkoutBtnText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
-    letterSpacing: 0.6,
+  quantityText: {
+    minWidth: 30,
+    textAlign: 'center',
+    color: KiranaColors.onSurface,
+    fontSize: 18,
+    lineHeight: 20,
+  },
+  lineTotal: {
+    minWidth: 48,
+    textAlign: 'right',
+    color: KiranaColors.onSurface,
+    fontSize: 19,
+    lineHeight: 21,
   },
 });

@@ -1,11 +1,16 @@
 import React from 'react';
-import { View, Text, StyleSheet, Platform, ScrollView } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { CartItem } from '../store/cartStore';
+import { getShopNameReceipt } from '../utils/shopName';
+import { KiranaBorder, KiranaColors, KiranaRadius } from '@/constants/kirana-design';
+import KText from './ui/KText';
 
 interface ReceiptPreviewProps {
   cartItems: CartItem[];
   total: number;
 }
+
+const mono = Platform.select({ ios: 'JetBrainsMono_500Medium', android: 'JetBrainsMono_500Medium' });
 
 export default function ReceiptPreview({ cartItems, total }: ReceiptPreviewProps) {
   const dateStr = new Date().toLocaleString();
@@ -13,33 +18,34 @@ export default function ReceiptPreview({ cartItems, total }: ReceiptPreviewProps
   return (
     <View style={styles.container}>
       <View style={styles.receiptPaper}>
-        {/* Top jagged edge simulated by dashed border in styling */}
-        <Text style={styles.shopName}>KIRANA STORE</Text>
-        <Text style={styles.dateText}>{dateStr}</Text>
-        <Text style={styles.divider}>--------------------------------</Text>
-        
+        <KText variant="headlineMd" style={styles.shopName}>
+          {getShopNameReceipt()}
+        </KText>
+        <KText variant="bodyMd" style={[styles.mono, styles.dateText]}>{dateStr}</KText>
+        <KText variant="bodyMd" style={[styles.mono, styles.divider]}>--------------------------------</KText>
+
         {cartItems.map((item) => {
           const subtotal = item.quantity * item.product.price;
           return (
             <View key={item.product.id} style={styles.itemRow}>
-              <Text style={styles.itemName}>{item.product.name}</Text>
-              <Text style={styles.itemCalc}>
+              <KText variant="bodyMd" style={[styles.mono, styles.itemName]}>{item.product.name}</KText>
+              <KText variant="bodyMd" style={[styles.mono, styles.itemCalc]}>
                 {item.quantity} x {item.product.price.toFixed(2)} = {subtotal.toFixed(2)}
-              </Text>
+              </KText>
             </View>
           );
         })}
 
-        <Text style={styles.divider}>--------------------------------</Text>
-        <Text style={styles.totalText}>Total: Rs. {total.toFixed(2)}</Text>
-        
+        <KText variant="bodyMd" style={[styles.mono, styles.divider]}>--------------------------------</KText>
+        <KText variant="priceSub" style={[styles.mono, styles.totalText]}>
+          Total: Rs. {total.toFixed(2)}
+        </KText>
+
         <View style={styles.footerSpacing} />
       </View>
     </View>
   );
 }
-
-const fontFamily = Platform.select({ ios: 'Courier', android: 'monospace' });
 
 const styles = StyleSheet.create({
   container: {
@@ -47,65 +53,49 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   receiptPaper: {
-    backgroundColor: '#fffdf5', // slight off-white/yellowish paper color
+    backgroundColor: KiranaColors.surface,
     padding: 24,
     width: '100%',
     maxWidth: 400,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
+    borderWidth: KiranaBorder.card,
+    borderColor: KiranaColors.outlineVariant,
+    borderRadius: KiranaRadius.md,
     borderStyle: 'dashed',
-    borderColor: '#b2bec3',
   },
   shopName: {
-    fontFamily,
-    fontSize: 24,
-    fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 8,
-    color: '#2d3436',
+    color: KiranaColors.onSurface,
+  },
+  mono: {
+    fontFamily: mono,
   },
   dateText: {
-    fontFamily,
-    fontSize: 14,
     textAlign: 'left',
     marginBottom: 8,
-    color: '#636e72',
+    color: KiranaColors.onSurfaceVariant,
   },
   divider: {
-    fontFamily,
-    fontSize: 16,
     textAlign: 'center',
     marginVertical: 8,
-    color: '#2d3436',
+    color: KiranaColors.onSurface,
   },
   itemRow: {
     marginBottom: 8,
   },
   itemName: {
-    fontFamily,
-    fontSize: 14,
     textAlign: 'left',
-    color: '#2d3436',
+    color: KiranaColors.onSurface,
   },
   itemCalc: {
-    fontFamily,
-    fontSize: 14,
     textAlign: 'right',
     marginTop: 2,
-    color: '#2d3436',
+    color: KiranaColors.onSurface,
   },
   totalText: {
-    fontFamily,
-    fontSize: 18,
-    fontWeight: 'bold',
     textAlign: 'right',
     marginTop: 8,
-    color: '#2d3436',
+    color: KiranaColors.onSurface,
   },
   footerSpacing: {
     height: 16,

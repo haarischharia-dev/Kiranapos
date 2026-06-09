@@ -5,15 +5,19 @@ import * as SQLite from 'expo-sqlite';
 // which leaves the native pointer null and surfaces as
 // "NativeDatabase.prepareAsync has been rejected: NullPointerException".
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
+let dbInstance: SQLite.SQLiteDatabase | null = null;
+
+const DATABASE_NAME = 'kirana.db';
 
 export const openDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
   if (!dbPromise) {
     dbPromise = (async () => {
-      const db = await SQLite.openDatabaseAsync('kirana.db');
+      const db = await SQLite.openDatabaseAsync(DATABASE_NAME);
       // Run schema creation + migrations before handing the connection to any
       // caller, so background sync can never query a column (e.g.
       // synced_to_global) that the ALTER hasn't added yet.
       await initializeDatabase(db);
+      dbInstance = db;
       return db;
     })().catch((err) => {
       // Reset so a later call can retry instead of caching a failed open.
@@ -91,4 +95,15 @@ export const initializeDatabase = async (db: SQLite.SQLiteDatabase) => {
   } catch (e) {
     // Column already exists, ignore
   }
+};
+
+/** Wipes local SQLite after account deletion (expo-sqlite equivalent of WatermelonDB reset). */
+export const unsafeResetDatabase = async (): Promise<void> => {
+  if (dbInstance) {
+    await dbInstance.closeAsync();
+    dbInstance = null;
+  }
+  dbPromise = null;
+  await SQLite.deleteDatabaseAsync(DATABASE_NAME);
+  await openDatabase();
 };

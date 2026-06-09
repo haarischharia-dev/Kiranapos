@@ -1,4 +1,5 @@
 import { EscPos } from './escpos';
+import { getShopNameReceipt } from './shopName';
 
 export interface CartItem {
   name: string;
@@ -22,7 +23,7 @@ export const buildSmartReceipt = (
   add(EscPos.alignCenter());
   add(EscPos.boldOn());
   add(EscPos.textSizeDouble());
-  add(EscPos.text('KIRANA STORE\n'));
+  add(EscPos.text(`${getShopNameReceipt()}\n`));
   add(EscPos.textSizeNormal());
   add(EscPos.boldOff());
   add(EscPos.feed());

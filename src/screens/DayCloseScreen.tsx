@@ -1,5 +1,8 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking } from 'react-native';
+import { View, StyleSheet, ScrollView, Linking } from 'react-native';
+import KText from '../components/ui/KText';
+import KButton from '../components/ui/KButton';
+import { KiranaBorder, KiranaColors, KiranaRadius, KiranaSpacing } from '@/constants/kirana-design';
 import { useFocusEffect } from 'expo-router';
 import { fetchDayCloseSummary, DayCloseSummary } from '../utils/analytics';
 import { writeBytesToPrinter } from '../utils/blePrinter';
@@ -113,13 +116,11 @@ export default function DayCloseScreen() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.headerBox}>
-        <Text style={styles.headerTitle}>Today's Total Collected</Text>
-        <Text style={styles.mainTally}>
+        <KText variant="labelCaps" style={styles.headerTitle}>Today's Total Collected</KText>
+        <KText variant="priceDisplay" style={styles.mainTally}>
           ₹{summary?.totalRevenue.toFixed(2) || '0.00'}
-        </Text>
-        <TouchableOpacity style={styles.refreshBtn} onPress={loadSummary}>
-          <Text style={styles.refreshBtnText}>↻ Refresh</Text>
-        </TouchableOpacity>
+        </KText>
+        <KButton label="Refresh" variant="secondary" onPress={loadSummary} style={styles.refreshBtn} />
       </View>
 
       {isDelayedLoading ? (
@@ -133,41 +134,37 @@ export default function DayCloseScreen() {
       ) : (
         <View style={styles.cardsContainer}>
           <View style={[styles.card, styles.cashCard]}>
-            <Text style={styles.cardLabel}>💵 Cash</Text>
-            <Text style={styles.cardValue}>₹{summary?.cashSales.toFixed(2) || '0.00'}</Text>
+            <KText variant="labelCaps" style={styles.cardLabel}>Cash</KText>
+            <KText variant="priceSub" style={styles.cardValue}>₹{summary?.cashSales.toFixed(2) || '0.00'}</KText>
           </View>
           <View style={[styles.card, styles.upiCard]}>
-            <Text style={styles.cardLabel}>📱 UPI</Text>
-            <Text style={styles.cardValue}>₹{summary?.upiSales.toFixed(2) || '0.00'}</Text>
+            <KText variant="labelCaps" style={styles.cardLabel}>UPI</KText>
+            <KText variant="priceSub" style={styles.cardValue}>₹{summary?.upiSales.toFixed(2) || '0.00'}</KText>
           </View>
           <View style={[styles.card, styles.khataCard]}>
-            <Text style={styles.cardLabel}>📖 Khata Added</Text>
-            <Text style={styles.cardValue}>₹{summary?.khataSales.toFixed(2) || '0.00'}</Text>
+            <KText variant="labelCaps" style={styles.cardLabel}>Khata Added</KText>
+            <KText variant="priceSub" style={styles.cardValue}>₹{summary?.khataSales.toFixed(2) || '0.00'}</KText>
           </View>
         </View>
       )}
 
       <View style={styles.statsContainer}>
         <View style={styles.statRow}>
-          <Text style={styles.statLabel}>Total Items Sold</Text>
-          <Text style={styles.statValue}>{summary?.itemCount || 0}</Text>
+          <KText variant="bodyMd" style={styles.statLabel}>Total Items Sold</KText>
+          <KText variant="priceSub" style={styles.statValue}>{summary?.itemCount || 0}</KText>
         </View>
         <View style={styles.statRow}>
-          <Text style={styles.statLabel}>Khata Recovered (Credits)</Text>
-          <Text style={styles.statValue}>₹{summary?.khataRecovered.toFixed(2) || '0.00'}</Text>
+          <KText variant="bodyMd" style={styles.statLabel}>Khata Recovered (Credits)</KText>
+          <KText variant="priceSub" style={styles.statValue}>₹{summary?.khataRecovered.toFixed(2) || '0.00'}</KText>
         </View>
       </View>
 
       <View style={styles.actionsContainer}>
-        <Text style={styles.syncStatusText}>
+        <KText variant="bodyMd" style={styles.syncStatusText}>
           Catalogue updated: {storage.getString('last_sync_timestamp') || 'Pending'}
-        </Text>
-        <TouchableOpacity style={styles.shareBtn} onPress={handleShare}>
-          <Text style={styles.shareBtnText}>Share Summary via WhatsApp</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.printBtn} onPress={handlePrint}>
-          <Text style={styles.printBtnText}>Print EOD Slip</Text>
-        </TouchableOpacity>
+        </KText>
+        <KButton label="Share via WhatsApp" onPress={handleShare} style={styles.actionBtn} />
+        <KButton label="Print EOD Slip" variant="navy" onPress={handlePrint} style={styles.actionBtn} />
       </View>
     </ScrollView>
   );
@@ -176,137 +173,93 @@ export default function DayCloseScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f6fa',
+    backgroundColor: KiranaColors.background,
   },
   headerBox: {
-    backgroundColor: '#fff',
-    padding: 32,
+    backgroundColor: KiranaColors.surface,
+    padding: KiranaSpacing.marginPage,
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#dcdde1',
+    borderBottomWidth: KiranaBorder.card,
+    borderBottomColor: KiranaColors.outlineVariant,
     marginBottom: 16,
   },
   headerTitle: {
-    fontSize: 18,
-    color: '#636e72',
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    color: KiranaColors.onSurfaceVariant,
     marginBottom: 8,
   },
   mainTally: {
-    fontSize: 48,
-    fontWeight: '900',
-    color: '#2d3436',
+    color: KiranaColors.onSurface,
     marginBottom: 16,
   },
   refreshBtn: {
-    backgroundColor: '#f1f2f6',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  refreshBtnText: {
-    color: '#2d3436',
-    fontWeight: '600',
+    minWidth: 120,
   },
   cardsContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: KiranaSpacing.gutter,
     marginBottom: 16,
   },
   card: {
     padding: 20,
-    borderRadius: 16,
+    borderRadius: KiranaRadius.lg,
     marginBottom: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: KiranaColors.surface,
+    borderWidth: KiranaBorder.card,
+    borderColor: KiranaColors.outlineVariant,
   },
   cashCard: {
-    backgroundColor: '#fff',
     borderLeftWidth: 6,
-    borderLeftColor: '#00b894',
+    borderLeftColor: KiranaColors.success,
   },
   upiCard: {
-    backgroundColor: '#fff',
     borderLeftWidth: 6,
-    borderLeftColor: '#0984e3',
+    borderLeftColor: KiranaColors.tertiary,
   },
   khataCard: {
-    backgroundColor: '#fff',
     borderLeftWidth: 6,
-    borderLeftColor: '#d63031',
+    borderLeftColor: KiranaColors.primaryContainer,
   },
   cardLabel: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2d3436',
+    color: KiranaColors.onSurface,
   },
   cardValue: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#2d3436',
+    color: KiranaColors.onSurface,
   },
   statsContainer: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    borderRadius: 16,
+    backgroundColor: KiranaColors.surface,
+    marginHorizontal: KiranaSpacing.gutter,
+    borderRadius: KiranaRadius.lg,
     padding: 16,
     marginBottom: 24,
+    borderWidth: KiranaBorder.card,
+    borderColor: KiranaColors.outlineVariant,
   },
   statRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f2f6',
+    borderBottomWidth: KiranaBorder.hairline,
+    borderBottomColor: KiranaColors.outlineVariant,
   },
   statLabel: {
-    fontSize: 16,
-    color: '#636e72',
+    color: KiranaColors.onSurfaceVariant,
   },
   statValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2d3436',
+    color: KiranaColors.onSurface,
   },
   actionsContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: KiranaSpacing.gutter,
     paddingBottom: 40,
+    gap: 10,
   },
   syncStatusText: {
     textAlign: 'center',
-    color: '#b2bec3',
-    fontSize: 12,
-    marginBottom: 16,
-    fontStyle: 'italic',
+    color: KiranaColors.outline,
+    marginBottom: 8,
   },
-  shareBtn: {
-    backgroundColor: '#25D366',
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  shareBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  printBtn: {
-    backgroundColor: '#2d3436',
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  printBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+  actionBtn: {
+    width: '100%',
   },
 });

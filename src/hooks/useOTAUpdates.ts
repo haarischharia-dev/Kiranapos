@@ -1,45 +1,33 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import * as Updates from 'expo-updates';
 
 /**
- * Production builds: apply any downloaded OTA bundle immediately.
- * Native expo-updates downloads during startup but won't switch until reload —
- * without this, the app can stay stuck on the old embedded bundle forever.
+ * Production builds: apply downloaded OTA bundles without requiring a manual restart.
+ * Native expo-updates downloads on startup; we reload as soon as the bundle is ready.
  */
 export function useOTAUpdates() {
+  const { isUpdateAvailable, isUpdatePending, isStartupProcedureRunning } =
+    Updates.useUpdates();
+  const reloadingRef = useRef(false);
+
   useEffect(() => {
-    if (__DEV__) return;
+    if (__DEV__ || !Updates.isEnabled) return;
 
-    let cancelled = false;
+    if (!isUpdatePending || reloadingRef.current) return;
 
-    async function applyPendingOrFetch() {
-      try {
-        if (!Updates.isEnabled) return;
+    reloadingRef.current = true;
+    Updates.reloadAsync().catch((error) => {
+      reloadingRef.current = false;
+      console.log('OTA reload skipped:', error);
+    });
+  }, [isUpdatePending]);
 
-        // Critical: native layer sets this when a bundle was downloaded on a prior launch.
-        if (Updates.isUpdatePending) {
-          if (!cancelled) {
-            await Updates.reloadAsync();
-          }
-          return;
-        }
+  useEffect(() => {
+    if (__DEV__ || !Updates.isEnabled) return;
+    if (isStartupProcedureRunning || !isUpdateAvailable || isUpdatePending) return;
 
-        const result = await Updates.checkForUpdateAsync();
-        if (cancelled || !result.isAvailable) return;
-
-        await Updates.fetchUpdateAsync();
-        if (!cancelled) {
-          await Updates.reloadAsync();
-        }
-      } catch (error) {
-        console.log('OTA sync skipped:', error);
-      }
-    }
-
-    applyPendingOrFetch();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    Updates.fetchUpdateAsync().catch((error) => {
+      console.log('OTA fetch skipped:', error);
+    });
+  }, [isUpdateAvailable, isUpdatePending, isStartupProcedureRunning]);
 }

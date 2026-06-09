@@ -1,5 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { StyleSheet, View, Text, FlatList, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, FlatList, TouchableOpacity, TextInput } from 'react-native';
+import StoreHeader from '../../src/components/ui/StoreHeader';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useFocusEffect } from 'expo-router';
 import { Customer } from '../../src/types/db';
 import { openDatabase } from '../../src/db/database';
@@ -9,12 +11,32 @@ import CollectPaymentModal from '../../src/components/CollectPaymentModal';
 import { sendKhataReminder } from '../../src/utils/whatsapp';
 import Skeleton from '../../src/components/Skeleton';
 import { useDelayedLoading } from '../../src/hooks/useDelayedLoading';
+import KText from '../../src/components/ui/KText';
+import KButton from '../../src/components/ui/KButton';
+import { KiranaBorder, KiranaColors, KiranaRadius, KiranaSpacing } from '@/constants/kirana-design';
+
+const AVATAR_COLORS = [
+  KiranaColors.avatarOrange,
+  KiranaColors.avatarBlue,
+  KiranaColors.avatarTeal,
+  KiranaColors.secondaryContainer,
+];
+
+function initials(name: string) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('');
+}
 
 export default function KhataScreen() {
   const [debtors, setDebtors] = useState<Customer[]>([]);
   const [activeCustomerId, setActiveCustomerId] = useState<string | null>(null);
   const [collectFrom, setCollectFrom] = useState<Customer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
   const isDelayedLoading = useDelayedLoading(isLoading);
 
@@ -36,7 +58,7 @@ export default function KhataScreen() {
       if (!activeCustomerId) {
         refreshBalances();
       }
-    }, [activeCustomerId])
+    }, [activeCustomerId]),
   );
 
   const handleCollected = () => {
@@ -46,77 +68,116 @@ export default function KhataScreen() {
 
   if (activeCustomerId) {
     return (
-      <KhataHistory 
-        customerId={activeCustomerId} 
-        onBack={() => setActiveCustomerId(null)} 
+      <KhataHistory
+        customerId={activeCustomerId}
+        onBack={() => setActiveCustomerId(null)}
       />
     );
   }
 
   const totalOutstanding = debtors.reduce((sum, c) => sum + c.outstanding_balance, 0);
+  const activeCount = debtors.filter((c) => c.outstanding_balance > 0).length;
+  const filtered = debtors.filter((c) =>
+    c.name.toLowerCase().includes(search.trim().toLowerCase()),
+  );
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerBox}>
-        <Text style={styles.headerTitle}>Digital Khata</Text>
-        <Text style={styles.headerSub}>Total Outstanding Due</Text>
-        <Text style={styles.totalValue}>₹{totalOutstanding.toFixed(2)}</Text>
+      <StoreHeader />
+      <View style={styles.searchWrap}>
+        <MaterialIcons name="search" size={20} color={KiranaColors.outline} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search Customer Name..."
+          placeholderTextColor={KiranaColors.outline}
+          value={search}
+          onChangeText={setSearch}
+        />
+      </View>
+
+      <View style={styles.summaryRow}>
+        <View style={styles.summaryCard}>
+          <KText variant="labelCaps" style={styles.summaryLabel}>Total Collectable</KText>
+          <KText variant="priceDisplay" style={styles.summaryOwed}>
+            ₹{totalOutstanding.toFixed(0)}
+          </KText>
+        </View>
+        <View style={styles.summaryCard}>
+          <KText variant="labelCaps" style={styles.summaryLabel}>Active Customers</KText>
+          <KText variant="priceDisplay" style={styles.summaryCount}>
+            {activeCount}
+          </KText>
+        </View>
       </View>
 
       {isDelayedLoading ? (
         <View style={styles.listContainer}>
-          <Skeleton height={120} width="100%" radius={16} />
+          <Skeleton height={110} width="100%" radius={8} />
           <View style={{ height: 12 }} />
-          <Skeleton height={120} width="100%" radius={16} />
-          <View style={{ height: 12 }} />
-          <Skeleton height={120} width="100%" radius={16} />
+          <Skeleton height={110} width="100%" radius={8} />
         </View>
-      ) : debtors.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No outstanding dues.</Text>
-          <Text style={styles.emptySub}>All customers are settled up!</Text>
+          <KText variant="headlineMd" style={styles.emptyText}>No outstanding dues</KText>
+          <KText variant="bodyMd" style={styles.emptySub}>All customers are settled up</KText>
         </View>
       ) : (
         <FlatList
-          data={debtors}
+          data={filtered}
           keyExtractor={(c) => c.id}
           contentContainerStyle={styles.listContainer}
-          renderItem={({ item }) => (
-            <TouchableOpacity 
-              style={styles.card} 
-              activeOpacity={0.8}
-              onPress={() => setActiveCustomerId(item.id)}
-            >
-              <View style={styles.cardTopRow}>
-                <View style={styles.cardInfo}>
-                  <Text style={styles.customerName}>{item.name}</Text>
-                  <Text style={styles.customerPhone}>{item.phone}</Text>
+          renderItem={({ item, index }) => {
+            const owed = item.outstanding_balance;
+            const isSettled = owed <= 0;
+            return (
+              <TouchableOpacity
+                style={styles.card}
+                activeOpacity={0.85}
+                onPress={() => setActiveCustomerId(item.id)}
+              >
+                <View style={[styles.avatar, { backgroundColor: AVATAR_COLORS[index % AVATAR_COLORS.length] }]}>
+                  <KText variant="labelCaps" style={styles.avatarText}>{initials(item.name)}</KText>
                 </View>
-                <View style={styles.cardAmount}>
-                  <Text style={styles.dueLabel}>DUE</Text>
-                  <Text style={styles.dueValue}>₹{item.outstanding_balance.toFixed(2)}</Text>
+
+                <View style={styles.cardBody}>
+                  <KText variant="bodyMd" style={styles.customerName}>{item.name}</KText>
+                  <KText variant="labelCaps" style={styles.updatedLabel}>Last updated · today</KText>
+                  <View style={styles.amountRow}>
+                    <KText variant="priceSub" style={isSettled ? styles.settled : styles.owed}>
+                      ₹{owed.toFixed(0)} {isSettled ? 'settled' : 'owed'}
+                    </KText>
+                  </View>
                 </View>
-              </View>
-              <View style={styles.actionRow}>
+
                 <TouchableOpacity
-                  style={styles.collectButton}
-                  activeOpacity={0.8}
-                  onPress={() => setCollectFrom(item)}
+                  style={[styles.waBtn, isSettled && styles.waBtnDisabled]}
+                  onPress={() => !isSettled && sendKhataReminder(item.phone, item.name, owed)}
+                  disabled={isSettled}
                 >
-                  <Text style={styles.collectButtonText}>Collect Payment</Text>
+                  <MaterialIcons
+                    name="chat"
+                    size={20}
+                    color={isSettled ? KiranaColors.outline : KiranaColors.settled}
+                  />
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.remindButton}
-                  activeOpacity={0.8}
-                  onPress={() => sendKhataReminder(item.phone, item.name, item.outstanding_balance)}
-                >
-                  <Text style={styles.remindButtonText}>Remind on WhatsApp</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          )}
+              </TouchableOpacity>
+            );
+          }}
         />
       )}
+
+      {debtors.some((c) => c.outstanding_balance > 0) ? (
+        <View style={styles.footer}>
+          <KButton
+            label="Collect Payment"
+            onPress={() => {
+              const firstDue = debtors.find((c) => c.outstanding_balance > 0);
+              if (firstDue) setCollectFrom(firstDue);
+            }}
+            height={64}
+          />
+        </View>
+      ) : null}
 
       <CollectPaymentModal
         visible={!!collectFrom}
@@ -131,127 +192,144 @@ export default function KhataScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f6fa',
+    backgroundColor: KiranaColors.background,
   },
-  headerBox: {
-    backgroundColor: '#fff',
-    paddingTop: 60,
-    paddingBottom: 24,
-    paddingHorizontal: 24,
+  searchWrap: {
+    flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#dcdde1',
+    marginHorizontal: KiranaSpacing.gutter,
+    marginTop: 6,
+    marginBottom: 10,
+    borderWidth: KiranaBorder.card,
+    borderColor: KiranaColors.outlineVariant,
+    borderRadius: KiranaRadius.md,
+    backgroundColor: KiranaColors.surface,
+    paddingHorizontal: 12,
+    minHeight: KiranaSpacing.touchMin,
+    gap: 8,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2d3436',
-    marginBottom: 16,
+  searchInput: {
+    flex: 1,
+    fontFamily: 'WorkSans_400Regular',
+    fontSize: 16,
+    color: KiranaColors.onSurface,
+    paddingVertical: 10,
   },
-  headerSub: {
-    fontSize: 14,
-    color: '#636e72',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    fontWeight: '600',
+  summaryRow: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: KiranaSpacing.gutter,
+    marginBottom: 12,
   },
-  totalValue: {
-    fontSize: 42,
-    fontWeight: '900',
-    color: '#d63031',
-    marginTop: 4,
+  summaryCard: {
+    flex: 1,
+    backgroundColor: KiranaColors.surface,
+    borderWidth: KiranaBorder.card,
+    borderColor: KiranaColors.outlineVariant,
+    borderRadius: KiranaRadius.md,
+    padding: 14,
+    gap: 4,
+  },
+  summaryLabel: {
+    color: KiranaColors.onSurfaceVariant,
+    fontSize: 10,
+  },
+  summaryOwed: {
+    color: KiranaColors.owed,
+    fontSize: 28,
+    lineHeight: 34,
+  },
+  summaryCount: {
+    color: KiranaColors.primary,
+    fontSize: 28,
+    lineHeight: 34,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    gap: 8,
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#b2bec3',
+    color: KiranaColors.onSurfaceVariant,
   },
   emptySub: {
-    fontSize: 14,
-    color: '#dfe6e9',
-    marginTop: 8,
+    color: KiranaColors.outline,
   },
   listContainer: {
-    padding: 16,
+    paddingHorizontal: KiranaSpacing.gutter,
+    paddingBottom: 8,
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-    borderLeftWidth: 6,
-    borderLeftColor: '#d63031',
-  },
-  cardTopRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    backgroundColor: KiranaColors.surface,
+    borderWidth: KiranaBorder.card,
+    borderColor: KiranaColors.outlineVariant,
+    borderRadius: KiranaRadius.md,
+    padding: 12,
+    marginBottom: 10,
+    gap: 12,
   },
-  cardInfo: {
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: KiranaRadius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: KiranaBorder.hairline,
+    borderColor: KiranaColors.onSurface,
+  },
+  avatarText: {
+    color: KiranaColors.navy,
+    fontSize: 14,
+  },
+  cardBody: {
     flex: 1,
+    gap: 2,
   },
   customerName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2d3436',
+    fontFamily: 'WorkSans_600SemiBold',
+    fontSize: 17,
+    color: KiranaColors.onSurface,
   },
-  customerPhone: {
-    fontSize: 14,
-    color: '#636e72',
+  updatedLabel: {
+    color: KiranaColors.outline,
+    fontSize: 9,
+  },
+  amountRow: {
     marginTop: 4,
   },
-  cardAmount: {
-    alignItems: 'flex-end',
+  owed: {
+    color: KiranaColors.owed,
+    fontSize: 18,
   },
-  dueLabel: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#ff7675',
-    letterSpacing: 1,
+  settled: {
+    color: KiranaColors.settled,
+    fontSize: 18,
   },
-  dueValue: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#d63031',
-    marginTop: 2,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  collectButton: {
-    flex: 1,
-    backgroundColor: '#00b894',
-    paddingVertical: 12,
-    borderRadius: 8,
+  waBtn: {
+    width: 44,
+    height: 44,
     alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: KiranaBorder.card,
+    borderColor: KiranaColors.settled,
+    borderRadius: KiranaRadius.sm,
+    backgroundColor: KiranaColors.surface,
   },
-  collectButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 14,
+  waBtnDisabled: {
+    borderColor: KiranaColors.outlineVariant,
+    opacity: 0.5,
   },
-  remindButton: {
-    flex: 1,
-    backgroundColor: '#25D366',
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
+  footer: {
+    padding: KiranaSpacing.gutter,
+    gap: 8,
+    borderTopWidth: KiranaBorder.hairline,
+    borderTopColor: KiranaColors.outlineVariant,
+    backgroundColor: KiranaColors.surface,
   },
-  remindButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 14,
+  collectBtn: {
+    backgroundColor: KiranaColors.primaryContainer,
   },
 });

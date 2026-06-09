@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { router } from 'expo-router';
 import { storage } from '../db/seedImporter';
 import { bleManager, ensureBluetoothIsOn } from '../utils/bleManager';
+import KText from '../components/ui/KText';
+import KInput from '../components/ui/KInput';
+import KButton from '../components/ui/KButton';
+import { KiranaBorder, KiranaColors, KiranaRadius, KiranaSpacing } from '@/constants/kirana-design';
 
 export default function OnboardingScreen() {
   const [step, setStep] = useState(1);
@@ -43,14 +47,13 @@ export default function OnboardingScreen() {
         return;
       }
       if (device && device.name) {
-        // Broad filter, ideally checking specifically for POS printer names or characteristics
         bleManager.stopDeviceScan();
         storage.set('saved_printer_id', device.id);
         setPaired(true);
         setScanning(false);
       }
     });
-    
+
     setTimeout(() => {
       bleManager.stopDeviceScan();
       setScanning(false);
@@ -61,57 +64,51 @@ export default function OnboardingScreen() {
     <SafeAreaView style={styles.container}>
       {step === 1 ? (
         <View style={styles.stepContainer}>
-          <Text style={styles.title}>Welcome to KiranaPOS</Text>
-          <Text style={styles.subtitle}>1. Select Language</Text>
+          <KText variant="headlineLg" style={styles.title}>Welcome to KiranaPOS</KText>
+          <KText variant="labelCaps" style={styles.subtitle}>1. Select Language</KText>
           <View style={styles.langRow}>
-            <TouchableOpacity 
-              style={[styles.langBtn, lang === 'en' && styles.langBtnActive]} 
+            <TouchableOpacity
+              style={[styles.langBtn, lang === 'en' && styles.langBtnActive]}
               onPress={() => handleSetLang('en')}
             >
-              <Text style={[styles.langText, lang === 'en' && styles.langTextActive]}>English</Text>
+              <KText variant="bodyLg" style={[styles.langText, lang === 'en' && styles.langTextActive]}>English</KText>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.langBtn, lang === 'hi' && styles.langBtnActive]} 
+            <TouchableOpacity
+              style={[styles.langBtn, lang === 'hi' && styles.langBtnActive]}
               onPress={() => handleSetLang('hi')}
             >
-              <Text style={[styles.langText, lang === 'hi' && styles.langTextActive]}>हिंदी</Text>
+              <KText variant="bodyLg" style={[styles.langText, lang === 'hi' && styles.langTextActive]}>हिंदी</KText>
             </TouchableOpacity>
           </View>
-          
-          <Text style={styles.subtitle}>2. Shop Name</Text>
-          <TextInput 
-            style={styles.input}
+
+          <KInput
+            label="2. Shop Name"
             placeholder="Enter your shop name"
             value={shopName}
             onChangeText={setShopName}
           />
-          
-          <TouchableOpacity style={styles.primaryBtn} onPress={handleNext}>
-            <Text style={styles.primaryBtnText}>Continue</Text>
-          </TouchableOpacity>
+
+          <KButton label="Continue" onPress={handleNext} height={64} />
         </View>
       ) : (
         <View style={styles.stepContainer}>
-          <Text style={styles.title}>Hardware Setup</Text>
-          <Text style={styles.subtitle}>Pair your Bluetooth Receipt Printer</Text>
-          
+          <KText variant="headlineLg" style={styles.title}>Hardware Setup</KText>
+          <KText variant="bodyMd" style={styles.subtitleBody}>Pair your Bluetooth receipt printer</KText>
+
           {paired ? (
             <View style={styles.successBox}>
-              <Text style={styles.successText}>✅ Printer Paired Successfully!</Text>
+              <KText variant="bodyLg" style={styles.successText}>Printer paired successfully</KText>
             </View>
           ) : (
-            <TouchableOpacity 
-              style={styles.primaryBtn} 
+            <KButton
+              label={scanning ? 'Scanning...' : 'Find My Printer'}
               onPress={handleFindPrinter}
               disabled={scanning}
-            >
-              <Text style={styles.primaryBtnText}>{scanning ? 'Scanning...' : 'Find My Printer'}</Text>
-            </TouchableOpacity>
+              height={64}
+            />
           )}
 
-          <TouchableOpacity style={styles.secondaryBtn} onPress={handleNext}>
-            <Text style={styles.secondaryBtnText}>Skip for Now</Text>
-          </TouchableOpacity>
+          <KButton label="Skip for Now" variant="secondary" onPress={handleNext} style={styles.skipBtn} />
         </View>
       )}
     </SafeAreaView>
@@ -119,20 +116,69 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', justifyContent: 'center' },
-  stepContainer: { padding: 32 },
-  title: { fontSize: 32, fontWeight: '900', marginBottom: 24, textAlign: 'center', color: '#2d3436' },
-  subtitle: { fontSize: 18, fontWeight: '700', marginBottom: 12, marginTop: 24, color: '#636e72' },
-  langRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  langBtn: { flex: 1, padding: 16, backgroundColor: '#f1f2f6', marginHorizontal: 8, borderRadius: 12, alignItems: 'center' },
-  langBtnActive: { backgroundColor: '#0984e3' },
-  langText: { fontSize: 18, fontWeight: '600', color: '#2d3436' },
-  langTextActive: { color: '#fff' },
-  input: { borderWidth: 1, borderColor: '#dcdde1', padding: 16, borderRadius: 12, fontSize: 18, marginBottom: 32 },
-  primaryBtn: { backgroundColor: '#00b894', padding: 20, borderRadius: 12, alignItems: 'center', marginVertical: 8, shadowColor: '#00b894', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
-  primaryBtnText: { color: '#fff', fontSize: 18, fontWeight: '900' },
-  secondaryBtn: { padding: 18, alignItems: 'center', marginVertical: 8 },
-  secondaryBtnText: { color: '#b2bec3', fontSize: 16, fontWeight: '700' },
-  successBox: { backgroundColor: '#e8f8f5', padding: 24, borderRadius: 12, marginVertical: 16 },
-  successText: { fontSize: 20, color: '#00b894', textAlign: 'center', fontWeight: 'bold' }
+  container: {
+    flex: 1,
+    backgroundColor: KiranaColors.background,
+    justifyContent: 'center',
+  },
+  stepContainer: {
+    padding: KiranaSpacing.marginPage,
+    gap: 8,
+  },
+  title: {
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  subtitle: {
+    marginTop: 8,
+    color: KiranaColors.onSurfaceVariant,
+  },
+  subtitleBody: {
+    color: KiranaColors.onSurfaceVariant,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  langRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 8,
+  },
+  langBtn: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: KiranaColors.surface,
+    borderRadius: KiranaRadius.md,
+    alignItems: 'center',
+    borderWidth: KiranaBorder.card,
+    borderColor: KiranaColors.outlineVariant,
+    minHeight: KiranaSpacing.touchMin,
+    justifyContent: 'center',
+  },
+  langBtnActive: {
+    backgroundColor: KiranaColors.primaryContainer,
+    borderColor: KiranaColors.onPrimaryContainer,
+  },
+  langText: {
+    color: KiranaColors.onSurface,
+  },
+  langTextActive: {
+    color: KiranaColors.navy,
+    fontFamily: 'WorkSans_600SemiBold',
+  },
+  skipBtn: {
+    marginTop: 8,
+  },
+  successBox: {
+    backgroundColor: KiranaColors.successContainer,
+    padding: 24,
+    borderRadius: KiranaRadius.md,
+    marginVertical: 16,
+    borderWidth: KiranaBorder.card,
+    borderColor: KiranaColors.success,
+  },
+  successText: {
+    color: KiranaColors.success,
+    textAlign: 'center',
+    fontFamily: 'WorkSans_600SemiBold',
+  },
 });

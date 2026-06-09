@@ -1,75 +1,109 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, Text, Vibration, TouchableOpacity } from 'react-native';
-import { Camera, useCameraDevice, useCameraPermission, useCodeScanner, type CameraDevice } from 'react-native-vision-camera';
+import { StyleSheet, View, TextInput, Vibration, TouchableOpacity, FlatList } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Camera, useCameraPermission, useCodeScanner } from 'react-native-vision-camera';
 import { useIsFocused } from '@react-navigation/native';
 import { useNetworkState } from 'expo-network';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { router } from 'expo-router';
 import { openDatabase } from '../../src/db/database';
-import { findByBarcode, upsertProduct } from '../../src/db/productRepo';
+import { findByBarcode, searchProducts } from '../../src/db/productRepo';
+import { Product } from '../../src/types/db';
 import { fetchProductFromInternet } from '../../src/utils/barcodeApi';
 import { isIndianRetailBarcode } from '../../src/utils/barcodeValidation';
 import { useCartStore } from '../../src/store/cartStore';
+import { useMacroBarcodeCamera } from '../../src/hooks/useMacroBarcodeCamera';
 import CartView from '../../src/components/CartView';
 import QuickTapGrid from '../../src/components/QuickTapGrid';
 import QuickTapStrip from '../../src/components/QuickTapStrip';
 import NewProductModal from '../../src/components/NewProductModal';
-import { storage } from '../../src/db/seedImporter';
-
-const POS_CAMERA_ZOOM_KEY = 'pos_camera_zoom';
-const ZOOM_STEP = 0.1;
-const MAX_NORMALIZED_ZOOM = 0.3;
-
-const ZOOM_PRESETS = [
-  { label: '1x', value: 0 },
-  { label: '1.5x', value: 0.1 },
-  { label: '2x', value: 0.2 },
-] as const;
-
-function clampNormalizedZoom(value: number): number {
-  return Math.max(0, Math.min(MAX_NORMALIZED_ZOOM, Math.round(value * 10) / 10));
-}
-
-function toDeviceZoom(normalized: number, device: CameraDevice): number {
-  const ratio = clampNormalizedZoom(normalized) / MAX_NORMALIZED_ZOOM;
-  const maxScanZoom = Math.min(device.maxZoom, device.neutralZoom * 2);
-  return device.minZoom + ratio * (maxScanZoom - device.minZoom);
-}
-
-function readSavedZoom(): number {
-  const saved = storage.getNumber(POS_CAMERA_ZOOM_KEY);
-  return clampNormalizedZoom(saved ?? 0);
-}
+import CheckoutBar from '../../src/components/ui/CheckoutBar';
+import KText from '../../src/components/ui/KText';
+import KButton from '../../src/components/ui/KButton';
+import { KiranaBorder, KiranaColors, KiranaRadius, KiranaSpacing } from '@/constants/kirana-design';
 
 export default function ScannerScreen() {
+  const insets = useSafeAreaInsets();
   const { hasPermission, requestPermission } = useCameraPermission();
-  const device = useCameraDevice('back');
   const isFocused = useIsFocused();
   const networkState = useNetworkState();
-  
+
   const [isModalVisible, setModalVisible] = useState(false);
   const [isSearchingCloud, setIsSearchingCloud] = useState(false);
   const [unknownBarcode, setUnknownBarcode] = useState('');
   const [newName, setNewName] = useState('');
   const [bottomView, setBottomView] = useState<'cart' | 'grid'>('cart');
-  // Bumping this key remounts the Camera to recover from transient
-  // session-configuration errors without blocking the cashier.
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [cameraKey, setCameraKey] = useState(0);
-  const [zoom, setZoom] = useState(readSavedZoom);
+  const [cameraLayout, setCameraLayout] = useState<{ width: number; height: number } | null>(null);
   const cameraRef = useRef<Camera>(null);
 
-  const persistZoom = useCallback((nextZoom: number) => {
-    const clamped = clampNormalizedZoom(nextZoom);
-    setZoom(clamped);
-    storage.set(POS_CAMERA_ZOOM_KEY, clamped);
-  }, []);
+  const cameraActive = isFocused && !isModalVisible;
+  const {
+    device,
+    format,
+    macroZoom,
+    markCodeSeen,
+    onPreviewStarted,
+    onPreviewStopped,
+  } = useMacroBarcodeCamera({
+    cameraRef,
+    isActive: cameraActive,
+    cameraLayout,
+  });
+
+  const items = useCartStore((state) => state.items);
+  const getTotal = useCartStore((state) => state.getTotal);
+  const addItem = useCartStore((state) => state.addItem);
+  const total = getTotal();
+
+  const trimmedSearch = searchQuery.trim();
+  const showSearchResults = trimmedSearch.length > 0;
+
+  useEffect(() => {
+    if (!trimmedSearch) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsSearching(true);
+
+    const timer = setTimeout(async () => {
+      try {
+        const db = await openDatabase();
+        const results = await searchProducts(db, trimmedSearch);
+        if (!cancelled) setSearchResults(results);
+      } catch (error) {
+        console.error('Product search failed:', error);
+        if (!cancelled) setSearchResults([]);
+      } finally {
+        if (!cancelled) setIsSearching(false);
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [trimmedSearch]);
+
+  const handleSelectSearchResult = (product: Product) => {
+    Vibration.vibrate(30);
+    addItem(product);
+    setSearchQuery('');
+    setSearchResults([]);
+    setBottomView('cart');
+  };
 
   const handleCameraError = useCallback((error: { message?: string }) => {
     console.warn('📸 Camera error — attempting auto-recovery:', error?.message ?? error);
     setTimeout(() => setCameraKey((k) => k + 1), 600);
   }, []);
 
-  const addItem = useCartStore((state) => state.addItem);
-
-  // CRITICAL: Scan-Cooldown Guard state
   const lastScannedCode = useRef<string | null>(null);
   const lastScannedTime = useRef<number>(0);
   const isProcessing = useRef<boolean>(false);
@@ -78,20 +112,18 @@ export default function ScannerScreen() {
     codeTypes: ['ean-13', 'ean-8', 'code-128', 'upc-a'],
     onCodeScanned: async (codes) => {
       const code = codes[0];
-      if (!code || !code.value || isProcessing.current) return;
+      if (!code?.value || isProcessing.current) return;
+
+      markCodeSeen();
+
       if (!isIndianRetailBarcode(code.value)) return;
 
       const now = Date.now();
-      
-      // Cooldown Guard logic (1200ms lock-out for same barcode)
-      if (
-        code.value === lastScannedCode.current && 
-        now - lastScannedTime.current < 1200
-      ) {
-        return; // Ignore duplicate ghost scan
+
+      if (code.value === lastScannedCode.current && now - lastScannedTime.current < 1200) {
+        return;
       }
 
-      // Valid scan
       lastScannedCode.current = code.value;
       lastScannedTime.current = now;
       isProcessing.current = true;
@@ -99,15 +131,14 @@ export default function ScannerScreen() {
       try {
         const db = await openDatabase();
         const product = await findByBarcode(db, code.value);
-        
+
         if (product) {
-          Vibration.vibrate(50); // Haptic feedback
+          Vibration.vibrate(50);
           addItem(product);
-          console.log(`Added to cart: ${product.name}`);
         } else {
           setUnknownBarcode(code.value);
           let fetchedName = '';
-          
+
           if (networkState.isConnected) {
             setIsSearchingCloud(true);
             const globalResult = await fetchProductFromInternet(code.value);
@@ -116,7 +147,7 @@ export default function ScannerScreen() {
               fetchedName = globalResult;
             }
           }
-          
+
           setNewName(fetchedName);
           setModalVisible(true);
         }
@@ -125,25 +156,17 @@ export default function ScannerScreen() {
       } finally {
         isProcessing.current = false;
       }
-    }
+    },
   });
-
-  useEffect(() => {
-    if (!isFocused || isModalVisible || !cameraRef.current) return;
-    cameraRef.current.focus({ x: 0.5, y: 0.5 }).catch(() => {});
-  }, [isFocused, isModalVisible, zoom, cameraKey]);
 
   if (!hasPermission) {
     return (
-      <View style={[styles.centerContainer, { backgroundColor: '#d63031' }]}>
-        <Text style={[styles.permissionText, { color: '#fff', fontSize: 28, textAlign: 'center' }]}>Camera Access Required</Text>
-        <Text style={[styles.permissionText, { color: '#fff', fontSize: 28, marginBottom: 40, textAlign: 'center' }]}>कैमरा एक्सेस की आवश्यकता है</Text>
-        <TouchableOpacity 
-          style={{ backgroundColor: '#fff', paddingHorizontal: 32, paddingVertical: 20, borderRadius: 16, elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 6 }}
-          onPress={requestPermission}
-        >
-          <Text style={{ color: '#d63031', fontSize: 20, fontWeight: '900', textTransform: 'uppercase' }}>GRANT PERMISSION</Text>
-        </TouchableOpacity>
+      <View style={styles.centerContainer}>
+        <View style={styles.permissionBody}>
+          <KText variant="headlineMd" style={styles.permissionTitle}>Camera Access Required</KText>
+          <KText variant="bodyLg" style={styles.permissionSub}>कैमरा एक्सेस की आवश्यकता है</KText>
+          <KButton label="Grant Permission" onPress={requestPermission} height={56} />
+        </View>
       </View>
     );
   }
@@ -151,96 +174,140 @@ export default function ScannerScreen() {
   if (device == null) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.permissionText}>No Camera Device Found</Text>
+        <KText variant="bodyLg">No Camera Device Found</KText>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      {/* Top Half: Camera */}
-      <View style={styles.cameraHalf}>
+      <View style={[styles.cameraSection, { paddingTop: insets.top + 12 }]}>
+      <View
+        style={styles.cameraHalf}
+        onLayout={(event) => {
+          const { width, height } = event.nativeEvent.layout;
+          setCameraLayout((prev) =>
+            prev?.width === width && prev?.height === height ? prev : { width, height },
+          );
+        }}
+      >
         <Camera
           ref={cameraRef}
           key={cameraKey}
           style={StyleSheet.absoluteFill}
           device={device}
-          isActive={isFocused && !isModalVisible}
+          format={format}
+          isActive={cameraActive}
           codeScanner={codeScanner}
-          zoom={toDeviceZoom(zoom, device)}
+          zoom={macroZoom}
+          enableZoomGesture={false}
           onError={handleCameraError}
+          onPreviewStarted={onPreviewStarted}
+          onPreviewStopped={onPreviewStopped}
         />
 
-        <View style={styles.zoomControls} pointerEvents="box-none">
-          <TouchableOpacity
-            style={[styles.zoomStepBtn, zoom <= 0 && styles.zoomStepBtnDisabled]}
-            onPress={() => persistZoom(zoom - ZOOM_STEP)}
-            disabled={zoom <= 0}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.zoomStepBtnText}>−</Text>
-          </TouchableOpacity>
-          <View style={styles.zoomPresetRow}>
-            {ZOOM_PRESETS.map((preset) => (
-              <TouchableOpacity
-                key={preset.label}
-                style={[styles.zoomPresetBtn, zoom === preset.value && styles.zoomPresetBtnActive]}
-                onPress={() => persistZoom(preset.value)}
-                activeOpacity={0.8}
-              >
-                <Text
-                  style={[
-                    styles.zoomPresetText,
-                    zoom === preset.value && styles.zoomPresetTextActive,
-                  ]}
-                >
-                  {preset.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <TouchableOpacity
-            style={[styles.zoomStepBtn, zoom >= MAX_NORMALIZED_ZOOM && styles.zoomStepBtnDisabled]}
-            onPress={() => persistZoom(zoom + ZOOM_STEP)}
-            disabled={zoom >= MAX_NORMALIZED_ZOOM}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.zoomStepBtnText}>+</Text>
-          </TouchableOpacity>
-        </View>
-        
-        {/* Target Overlay Box */}
         <View style={styles.overlay} pointerEvents="none">
-          <View style={styles.targetBox} />
+          <View style={styles.scanFrame}>
+            <View style={[styles.corner, styles.cornerTL]} />
+            <View style={[styles.corner, styles.cornerTR]} />
+            <View style={[styles.corner, styles.cornerBL]} />
+            <View style={[styles.corner, styles.cornerBR]} />
+            <View style={styles.scanBadge}>
+              <MaterialIcons name="qr-code-scanner" size={20} color={KiranaColors.primaryContainer} />
+              <KText variant="labelCaps" style={styles.scanBadgeText}>Scan Barcode</KText>
+            </View>
+          </View>
           {isSearchingCloud ? (
-            <Text style={styles.overlayTextCloud}>Searching catalogs...</Text>
-          ) : (
-            <Text style={styles.overlayText}>Aim at a barcode</Text>
-          )}
+            <KText variant="labelCaps" style={styles.overlayStatus}>Searching catalogs...</KText>
+          ) : null}
         </View>
+      </View>
       </View>
 
       <QuickTapStrip refreshKey={bottomView} />
 
-      {/* Bottom Half: Toggle and Content */}
-      <View style={styles.cartHalf}>
-        <View style={styles.tabBar}>
-          <TouchableOpacity 
-            style={[styles.tabBtn, bottomView === 'cart' && styles.tabBtnActive]}
+      <View style={styles.sectionHeader}>
+        <KText variant="labelCaps" style={styles.sectionTitle}>Current Items</KText>
+        <View style={styles.viewToggle}>
+          <TouchableOpacity
+            style={[styles.toggleBtn, bottomView === 'cart' && styles.toggleBtnActive]}
             onPress={() => setBottomView('cart')}
           >
-            <Text style={[styles.tabText, bottomView === 'cart' && styles.tabTextActive]}>Cart</Text>
+            <KText variant="labelCaps" style={styles.toggleText}>Cart</KText>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.tabBtn, bottomView === 'grid' && styles.tabBtnActive]}
+          <TouchableOpacity
+            style={[styles.toggleBtn, bottomView === 'grid' && styles.toggleBtnActive]}
             onPress={() => setBottomView('grid')}
           >
-            <Text style={[styles.tabText, bottomView === 'grid' && styles.tabTextActive]}>Loose Items</Text>
+            <KText variant="labelCaps" style={styles.toggleText}>Loose</KText>
           </TouchableOpacity>
         </View>
-
-        {bottomView === 'cart' ? <CartView /> : <QuickTapGrid />}
       </View>
+
+      <View style={styles.searchRow}>
+        <View style={styles.searchInputWrap}>
+          <MaterialIcons name="search" size={18} color={KiranaColors.outline} style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search item or SKU"
+            placeholderTextColor={KiranaColors.outline}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+      </View>
+
+      <View style={styles.cartHalf}>
+        {showSearchResults ? (
+          <FlatList
+            data={searchResults}
+            keyExtractor={(item) => item.id}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.searchList}
+            ListEmptyComponent={
+              <View style={styles.searchEmpty}>
+                <KText variant="bodyMd" style={styles.searchEmptyText}>
+                  {isSearching ? 'Searching…' : 'No items found'}
+                </KText>
+              </View>
+            }
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.searchRowItem}
+                activeOpacity={0.85}
+                onPress={() => handleSelectSearchResult(item)}
+              >
+                <View style={styles.searchRowInfo}>
+                  <KText variant="bodyMd" style={styles.searchRowName} numberOfLines={1}>
+                    {item.name}
+                  </KText>
+                  {item.barcode ? (
+                    <KText variant="labelCaps" style={styles.searchRowBarcode}>
+                      {item.barcode}
+                    </KText>
+                  ) : null}
+                </View>
+                <KText variant="priceLine" style={styles.searchRowPrice}>
+                  ₹{item.price.toFixed(0)}
+                </KText>
+              </TouchableOpacity>
+            )}
+          />
+        ) : bottomView === 'cart' ? (
+          <CartView />
+        ) : (
+          <QuickTapGrid />
+        )}
+      </View>
+
+      <CheckoutBar
+        total={total}
+        disabled={items.length === 0}
+        onPress={() => {
+          if (items.length === 0) return;
+          router.push('/checkout');
+        }}
+      />
 
       <NewProductModal
         visible={isModalVisible}
@@ -252,150 +319,213 @@ export default function ScannerScreen() {
   );
 }
 
+const CORNER = 28;
+const CORNER_THICK = 4;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: KiranaColors.background,
+  },
+  centerContainer: {
+    flex: 1,
+    backgroundColor: KiranaColors.background,
+    justifyContent: 'center',
+  },
+  permissionBody: {
+    padding: KiranaSpacing.marginPage,
+    gap: 12,
+    alignItems: 'center',
+  },
+  permissionTitle: {
+    textAlign: 'center',
+  },
+  permissionSub: {
+    textAlign: 'center',
+    color: KiranaColors.onSurfaceVariant,
+    marginBottom: 8,
+  },
+  cameraSection: {
+    backgroundColor: KiranaColors.background,
+    paddingBottom: 6,
   },
   cameraHalf: {
     flexGrow: 0,
     flexShrink: 0,
-    height: 294,
+    height: 200,
+    marginTop: 8,
     overflow: 'hidden',
-  },
-  cartHalf: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  tabBar: {
-    flexDirection: 'row',
-    backgroundColor: '#f8f9fa',
-  },
-  tabBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  tabBtnActive: {
-    borderBottomColor: '#00b894',
-  },
-  tabText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#666',
-  },
-  tabTextActive: {
-    color: '#00b894',
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#fff',
-  },
-  permissionText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#333',
-  },
-  permissionSubText: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 20,
-    color: '#666',
+    backgroundColor: '#000',
+    borderRadius: KiranaRadius.md,
+    marginHorizontal: KiranaSpacing.gutter,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'flex-start',
     alignItems: 'center',
-    paddingTop: 65,
+    paddingTop: 36,
   },
-  targetBox: {
+  scanFrame: {
     width: 250,
-    height: 150,
-    borderWidth: 2,
-    borderColor: '#00FF00',
-    backgroundColor: 'transparent',
-    borderRadius: 12,
+    height: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  overlayText: {
-    marginTop: 20,
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  overlayTextCloud: {
-    marginTop: 20,
-    color: '#FFD700',
-    fontSize: 16,
-    fontWeight: '700',
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  zoomControls: {
+  corner: {
     position: 'absolute',
-    right: 12,
-    top: 12,
+    width: CORNER,
+    height: CORNER,
+    borderColor: KiranaColors.scannerFrame,
+  },
+  cornerTL: {
+    top: 0,
+    left: 0,
+    borderTopWidth: CORNER_THICK,
+    borderLeftWidth: CORNER_THICK,
+  },
+  cornerTR: {
+    top: 0,
+    right: 0,
+    borderTopWidth: CORNER_THICK,
+    borderRightWidth: CORNER_THICK,
+  },
+  cornerBL: {
+    bottom: 0,
+    left: 0,
+    borderBottomWidth: CORNER_THICK,
+    borderLeftWidth: CORNER_THICK,
+  },
+  cornerBR: {
+    bottom: 0,
+    right: 0,
+    borderBottomWidth: CORNER_THICK,
+    borderRightWidth: CORNER_THICK,
+  },
+  scanBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    borderRadius: 22,
-    paddingHorizontal: 6,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'transparent',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
-  zoomStepBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
+  scanBadgeText: {
+    color: '#ffffff',
+    fontSize: 14,
+    textShadowColor: 'rgba(0,0,0,0.85)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
-  zoomStepBtnDisabled: {
-    opacity: 0.35,
+  overlayStatus: {
+    marginTop: 10,
+    color: KiranaColors.primaryContainer,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
-  zoomStepBtnText: {
-    color: '#fff',
-    fontSize: 22,
-    fontWeight: '600',
-    lineHeight: 24,
-  },
-  zoomPresetRow: {
+  sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'space-between',
+    paddingHorizontal: KiranaSpacing.gutter,
+    paddingVertical: 5,
+    borderBottomWidth: KiranaBorder.hairline,
+    borderBottomColor: KiranaColors.outlineVariant,
+    backgroundColor: KiranaColors.surfaceContainer,
   },
-  zoomPresetBtn: {
-    paddingHorizontal: 8,
+  sectionTitle: {
+    color: KiranaColors.onSurface,
+  },
+  viewToggle: {
+    flexDirection: 'row',
+    borderWidth: KiranaBorder.hairline,
+    borderColor: KiranaColors.outlineVariant,
+    borderRadius: KiranaRadius.sm,
+    overflow: 'hidden',
+  },
+  toggleBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: KiranaColors.surface,
+  },
+  toggleBtnActive: {
+    backgroundColor: KiranaColors.primaryContainer,
+  },
+  toggleText: {
+    fontSize: 11,
+    color: KiranaColors.navy,
+  },
+  cartHalf: {
+    flex: 1,
+    backgroundColor: KiranaColors.background,
+  },
+  searchRow: {
+    paddingHorizontal: KiranaSpacing.gutter,
+    paddingTop: 4,
+    paddingBottom: 8,
+    backgroundColor: KiranaColors.surfaceContainer,
+    borderBottomWidth: KiranaBorder.hairline,
+    borderBottomColor: KiranaColors.outlineVariant,
+  },
+  searchInputWrap: {
+    alignSelf: 'flex-start',
+    width: '72%',
+    maxWidth: 280,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: KiranaBorder.card,
+    borderColor: KiranaColors.outlineVariant,
+    borderRadius: KiranaRadius.md,
+    backgroundColor: KiranaColors.surface,
+    minHeight: 42,
+    paddingHorizontal: 10,
+  },
+  searchIcon: {
+    marginRight: 6,
+  },
+  searchInput: {
+    flex: 1,
+    fontFamily: 'WorkSans_400Regular',
+    fontSize: 16,
+    color: KiranaColors.onSurface,
     paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.08)',
   },
-  zoomPresetBtnActive: {
-    backgroundColor: '#00b894',
+  searchList: {
+    paddingHorizontal: KiranaSpacing.gutter,
+    paddingBottom: 8,
   },
-  zoomPresetText: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 12,
-    fontWeight: '700',
+  searchRowItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: KiranaColors.surface,
+    borderWidth: KiranaBorder.card,
+    borderColor: KiranaColors.outlineVariant,
+    borderRadius: KiranaRadius.md,
+    padding: 12,
+    marginBottom: 8,
+    gap: 12,
   },
-  zoomPresetTextActive: {
-    color: '#fff',
+  searchRowInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  searchRowName: {
+    color: KiranaColors.onSurface,
+    fontFamily: 'WorkSans_600SemiBold',
+  },
+  searchRowBarcode: {
+    color: KiranaColors.outline,
+    fontSize: 10,
+  },
+  searchRowPrice: {
+    color: KiranaColors.primary,
+  },
+  searchEmpty: {
+    paddingVertical: 32,
+    alignItems: 'center',
+  },
+  searchEmptyText: {
+    color: KiranaColors.onSurfaceVariant,
   },
 });

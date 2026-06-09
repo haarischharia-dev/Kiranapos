@@ -1,74 +1,91 @@
-import { Image } from 'expo-image';
-import { StyleSheet, TouchableOpacity, Text } from 'react-native';
-
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { StyleSheet, View, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import KText from '../../src/components/ui/KText';
+import StoreHeader from '../../src/components/ui/StoreHeader';
+import KButton from '../../src/components/ui/KButton';
+import { KiranaBorder, KiranaColors, KiranaRadius, KiranaSpacing } from '@/constants/kirana-design';
 
-export default function HomeScreen() {
+export default function ProfileScreen() {
   const router = useRouter();
 
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">KiranaPOS</ThemedText>
-        <ThemedText>Your offline-first store counter</ThemedText>
-      </ThemedView>
+    <View style={styles.container}>
+      <StoreHeader />
+      <ScrollView contentContainerStyle={styles.content}>
+        <KText variant="headlineMd" style={styles.heading}>Profile</KText>
+        <KText variant="bodyMd" style={styles.subheading}>
+          Day-end reports, settings, and account.
+        </KText>
 
-      <ThemedView style={styles.managementSection}>
-        <ThemedText type="subtitle">Store Management</ThemedText>
-        <TouchableOpacity
-          testID="day-close-btn"
-          style={styles.dayCloseBtn}
-          onPress={() => router.push('/day-close')}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.dayCloseBtnText}>📊 Day Close (EOD)</Text>
-        </TouchableOpacity>
-      </ThemedView>
-    </ParallaxScrollView>
+        <View style={styles.tileGrid}>
+          <View style={styles.tileCard}>
+            <MaterialIcons name="summarize" size={28} color={KiranaColors.navy} />
+            <KText variant="labelCaps" style={styles.tileTitle}>Day Close</KText>
+            <KText variant="bodyMd" style={styles.tileSub}>EOD revenue & item counts</KText>
+            <KButton
+              testID="day-close-btn"
+              label="Open Day Close"
+              onPress={() => router.push('/day-close')}
+              style={styles.tileBtn}
+            />
+          </View>
+
+          <View style={styles.tileCard}>
+            <MaterialIcons name="settings" size={28} color={KiranaColors.navy} />
+            <KText variant="labelCaps" style={styles.tileTitle}>Settings</KText>
+            <KText variant="bodyMd" style={styles.tileSub}>Account, legal, printer</KText>
+            <KButton
+              testID="settings-btn"
+              label="Open Settings"
+              variant="secondary"
+              onPress={() => router.push('/settings')}
+              style={styles.tileBtn}
+            />
+          </View>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    gap: 8,
+  container: {
+    flex: 1,
+    backgroundColor: KiranaColors.background,
+  },
+  content: {
+    padding: KiranaSpacing.marginPage,
+    gap: KiranaSpacing.stackGap,
+  },
+  heading: {
+    color: KiranaColors.onSurface,
+  },
+  subheading: {
+    color: KiranaColors.onSurfaceVariant,
     marginBottom: 8,
   },
-  managementSection: {
-    gap: 12,
-    marginBottom: 16,
+  tileGrid: {
+    gap: KiranaSpacing.stackGap,
   },
-  dayCloseBtn: {
-    backgroundColor: '#0984e3',
-    paddingVertical: 20,
-    paddingHorizontal: 24,
-    borderRadius: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
+  tileCard: {
+    backgroundColor: KiranaColors.surface,
+    borderWidth: KiranaBorder.card,
+    borderColor: KiranaColors.outlineVariant,
+    borderRadius: KiranaRadius.lg,
+    padding: KiranaSpacing.marginPage,
+    gap: 8,
   },
-  dayCloseBtnText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
+  tileTitle: {
+    color: KiranaColors.onSurface,
+    fontSize: 13,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  tileSub: {
+    color: KiranaColors.onSurfaceVariant,
+    marginBottom: 4,
+  },
+  tileBtn: {
+    alignSelf: 'flex-start',
+    minWidth: 180,
   },
 });

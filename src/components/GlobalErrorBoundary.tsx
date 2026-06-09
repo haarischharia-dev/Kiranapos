@@ -1,5 +1,7 @@
 import React, { Component, ReactNode } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Animated } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, SafeAreaView, Animated } from 'react-native';
+import { KiranaBorder, KiranaColors, KiranaRadius, KiranaSpacing } from '@/constants/kirana-design';
+import KText from './ui/KText';
 import * as Sentry from '@sentry/react-native';
 import * as Updates from 'expo-updates';
 
@@ -67,11 +69,11 @@ export default class GlobalErrorBoundary extends Component<Props, State> {
               },
             ]}
           >
-            <Text style={styles.icon}>⚠️</Text>
-            <Text style={styles.title}>Something went wrong, but your current bill is saved.</Text>
-            <Text style={styles.subtitle}>We've logged the error and are working on it.</Text>
+            <KText variant="headlineMd" style={styles.icon}>⚠️</KText>
+            <KText variant="headlineMd" style={styles.title}>Something went wrong, but your current bill is saved.</KText>
+            <KText variant="bodyMd" style={styles.subtitle}>We've logged the error and are working on it.</KText>
             <TouchableOpacity style={styles.btn} onPress={this.handleRestart}>
-              <Text style={styles.btnText}>Restart App</Text>
+              <KText variant="labelCaps" style={styles.btnText}>Restart App</KText>
             </TouchableOpacity>
           </Animated.View>
         </SafeAreaView>
@@ -82,11 +84,18 @@ export default class GlobalErrorBoundary extends Component<Props, State> {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f6fa' },
-  content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  container: { flex: 1, backgroundColor: KiranaColors.background },
+  content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: KiranaSpacing.marginPage },
   icon: { fontSize: 48, marginBottom: 16 },
-  title: { fontSize: 22, fontWeight: 'bold', color: '#2d3436', textAlign: 'center', marginBottom: 12 },
-  subtitle: { fontSize: 16, color: '#636e72', textAlign: 'center', marginBottom: 32 },
-  btn: { backgroundColor: '#0984e3', paddingVertical: 16, paddingHorizontal: 32, borderRadius: 12 },
-  btnText: { color: '#fff', fontSize: 18, fontWeight: 'bold' }
+  title: { color: KiranaColors.onSurface, textAlign: 'center', marginBottom: 12 },
+  subtitle: { color: KiranaColors.onSurfaceVariant, textAlign: 'center', marginBottom: 32 },
+  btn: {
+    backgroundColor: KiranaColors.primaryContainer,
+    borderWidth: KiranaBorder.card,
+    borderColor: KiranaColors.navy,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: KiranaRadius.md,
+  },
+  btnText: { color: KiranaColors.navy },
 });
