@@ -116,7 +116,7 @@ export default function DayCloseScreen() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.headerBox}>
-        <KText variant="labelCaps" style={styles.headerTitle}>Today's Total Collected</KText>
+        <KText variant="labelCaps" style={styles.headerTitle}>Today&apos;s Total Collected</KText>
         <KText variant="priceDisplay" style={styles.mainTally}>
           ₹{summary?.totalRevenue.toFixed(2) || '0.00'}
         </KText>

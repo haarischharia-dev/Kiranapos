@@ -7,7 +7,7 @@ appId: com.haarischharia.kiranapos
     commands:
       - tapOn: "Clear"
 - tapOn: "Scan"
-- tapOn: "Loose Items"
+- tapOn: "Loose"
 - tapOn:
     id: "add-loose-btn"
 - tapOn:

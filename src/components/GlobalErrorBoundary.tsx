@@ -71,7 +71,7 @@ export default class GlobalErrorBoundary extends Component<Props, State> {
           >
             <KText variant="headlineMd" style={styles.icon}>⚠️</KText>
             <KText variant="headlineMd" style={styles.title}>Something went wrong, but your current bill is saved.</KText>
-            <KText variant="bodyMd" style={styles.subtitle}>We've logged the error and are working on it.</KText>
+            <KText variant="bodyMd" style={styles.subtitle}>We&apos;ve logged the error and are working on it.</KText>
             <TouchableOpacity style={styles.btn} onPress={this.handleRestart}>
               <KText variant="labelCaps" style={styles.btnText}>Restart App</KText>
             </TouchableOpacity>
