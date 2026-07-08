@@ -149,7 +149,7 @@ export default function CustomerPickerModal({ visible, remainingDebt, cartItems,
                 ListHeaderComponent={() => (
                   query.trim() !== '' && !exactMatchExists ? (
                     <TouchableOpacity style={styles.stickyCreateBtn} onPress={handleOpenCreateForm}>
-                      <Text style={styles.stickyCreateText}>+ Add "{query.trim()}" to Khata</Text>
+                      <Text style={styles.stickyCreateText}>+ Add &quot;{query.trim()}&quot; to Khata</Text>
                     </TouchableOpacity>
                   ) : null
                 )}
