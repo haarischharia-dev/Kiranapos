@@ -1,3 +1,4 @@
+// Handles async local SQLite queries for sub-5ms hardware barcode scans
 import { SQLiteDatabase } from 'expo-sqlite';
 import { Product } from '../types/db';
 
